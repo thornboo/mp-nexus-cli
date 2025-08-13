@@ -3,13 +3,14 @@
 （以下内容来源自原 `docs/开发流程与计划.md`，仅更名文件名，内容保持一致。）
 
 ### 一、里程碑规划（M1 → M4）
+（进度标记：【已完成】/【进行中】/【待接入】）
 
 - M1：MVP 骨架与预览打通（目标 1-2 周）
-  - CLI 骨架（命令、参数、帮助、版本显示）。
-  - 配置加载与 `.env(.mode)` 支持；优先级策略落地。
-  - 框架自动检测（Taro/uni-app），实现 Taro 优先；产物目录解析。
-  - `nexus preview` 对接 `miniprogram-ci`，支持终端二维码渲染。
-  - 基础日志与错误治理；Windows/macOS/Linux 三端验证。
+  - CLI 骨架（命令、参数、帮助、版本显示）。【已完成】
+  - 配置加载与 `.env(.mode)` 支持；优先级策略落地。【已完成（基础）】
+  - 框架自动检测（Taro/uni-app），实现 Taro 优先；产物目录解析。【进行中：已实现 Taro 检测与产物目录解析；uni 未接入】
+  - `nexus preview` 对接 `miniprogram-ci`，支持终端二维码渲染。【待接入：当前为 weapp mock 适配器，未接入真实 CI/二维码】
+  - 基础日志与错误治理；Windows/macOS/Linux 三端验证。【进行中：基础日志/退出码已落，跨平台待进一步验证】
 
 - M2：部署闭环与错误可观测（目标 1-2 周）
   - `nexus deploy` 上传能力与失败回退提示。
@@ -33,15 +34,15 @@
 ### 二、任务拆解与优先级
 
 P0（必须）：
-- 命令：`preview`、`deploy`；参数：`--mode --desc --ver --config --dry-run --verbose`。
-- 配置解析与 ENV 合并；最少可用配置校验（appId、privateKeyPath、platform）。
-- Taro 适配器：detect/build/outputPath。
-- Weapp 平台适配器：preview/upload（miniprogram-ci）。
+- 命令：`preview`、`deploy`；参数：`--mode --desc --ver --config --dry-run --verbose`。【已完成】
+- 配置解析与 ENV 合并；最少可用配置校验（appId、privateKeyPath、platform）。【已完成（基础）：ENV/CLI/配置合并；基础校验】
+- Taro 适配器：detect/build/outputPath。【进行中：detect/outputPath 已有，build 待对接 Taro CLI】
+- Weapp 平台适配器：preview/upload（miniprogram-ci）。【待接入：当前为 mock，未接入 miniprogram-ci】
 
 P1（重要）：
-- 终端二维码（qrcode-terminal）。
-- Git 信息自动集成（simple-git）。
-- 错误码体系与结构化日志（pino/winston）。
+- 终端二维码（qrcode-terminal）。【待接入】
+- Git 信息自动集成（simple-git）。【待接入】
+- 错误码体系与结构化日志（pino/winston）。【进行中：有基础日志与部分退出码】
 
 P2（增强）：
 - `nexus init` 交互式问答（inquirer/enquirer）。

@@ -142,6 +142,7 @@ export interface NexusConfig {
 ---
 
 ### 四、关键流程（时序）
+（当前实现状态注记：CLI/编排器最小闭环已完成；平台 weapp 使用 mock 适配器，Taro 检测/产物目录解析已接入）
 
 ```mermaid
 sequenceDiagram
