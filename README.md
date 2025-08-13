@@ -53,9 +53,15 @@ nexus init
 
 ## 文档索引
 
-- 项目目标：`docs/项目目标.md`
-- 架构设计：`docs/项目架构设计.md`
-- 开发流程与计划：`docs/开发流程与计划.md`
+- Overview：`docs/overview.md`
+- Architecture：`docs/architecture.md`
+- Development Plan：`docs/development-plan.md`
+- CLI Reference：`docs/cli-reference.md`
+- Config Reference：`docs/config-reference.md`
+- Adapters Guide：`docs/adapters-guide.md`
+- Notifiers Guide：`docs/notifiers-guide.md`
+- Testing：`docs/testing.md`
+- Troubleshooting：`docs/troubleshooting.md`
 
 ## 示例项目（examples）
 
