@@ -1,0 +1,26 @@
+{
+  "name": "mp-nexus-cli",
+  "version": "0.0.0-mvp",
+  "description": "统一小程序项目的一键预览/部署 CLI。聚合 Taro/uni 与 miniprogram-ci，提供标准化流程与可扩展适配器体系。",
+  "license": "MIT",
+  "private": false,
+  "bin": {
+    "nexus": "dist/nexus.js"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsup --config tsup.config.ts",
+    "dev": "node dist/nexus.js --help || true",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.4"
+  }
+}
+
+
