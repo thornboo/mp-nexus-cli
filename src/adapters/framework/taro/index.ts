@@ -1,5 +1,6 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { execa } from 'execa';
 import type { BuildOptions, FrameworkAdapter } from '../../../types/adapters';
 
 async function readJsonSafe(filePath: string): Promise<any | undefined> {
@@ -31,14 +32,68 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
       options.logger.info('[taro] 跳过构建（NEXUS_SKIP_BUILD=1）');
       return;
     }
-    // 最小实现：提示用户手动构建，后续接入 taro CLI 调用。
-    options.logger.warn('[taro] 当前未内置触发 taro 构建，请先在项目中执行构建命令');
+
+    options.logger.info('[taro] 开始构建...');
+    
+    try {
+      // 检测taro CLI是否可用
+      try {
+        await execa('taro', ['--version'], { cwd: options.cwd });
+      } catch {
+        throw new Error('未检测到 Taro CLI，请先安装：npm install -g @tarojs/cli');
+      }
+
+      // 确定构建命令
+      const buildCommand = 'build';
+      const platform = 'weapp';
+      const env = options.mode || 'development';
+      
+      const args = [buildCommand, '--type', platform, '--env', env];
+      
+      options.logger.debug(`[taro] 执行命令: taro ${args.join(' ')}`);
+      
+      const result = await execa('taro', args, {
+        cwd: options.cwd,
+        stdio: options.logger.debug ? 'inherit' : 'pipe',
+        env: {
+          ...process.env,
+          ...options.env,
+        },
+      });
+
+      if (result.exitCode !== 0) {
+        throw new Error(`Taro构建失败 (exit code: ${result.exitCode})`);
+      }
+
+      options.logger.info('[taro] 构建完成');
+    } catch (error) {
+      options.logger.error('[taro] 构建失败', error);
+      throw error;
+    }
   }
 
   async getOutputPath(options: BuildOptions): Promise<string> {
-    // 常见默认产物目录：dist/weapp
-    const candidate = path.resolve(options.cwd, 'dist', 'weapp');
-    return candidate;
+    try {
+      // 读取项目配置中的输出目录
+      const configPath = path.resolve(options.cwd, 'config', 'index.js');
+      const config = await import(configPath).catch(() => null);
+      
+      let outputDir = 'dist/weapp';
+      if (config?.default?.outputRoot) {
+        outputDir = config.default.outputRoot;
+      } else if (config?.outputRoot) {
+        outputDir = config.outputRoot;
+      }
+      
+      const candidate = path.resolve(options.cwd, outputDir);
+      options.logger.debug(`[taro] 产物目录: ${candidate}`);
+      return candidate;
+    } catch {
+      // 回退到默认路径
+      const candidate = path.resolve(options.cwd, 'dist', 'weapp');
+      options.logger.debug(`[taro] 使用默认产物目录: ${candidate}`);
+      return candidate;
+    }
   }
 }
 
