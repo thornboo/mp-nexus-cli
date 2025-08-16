@@ -3,6 +3,8 @@ import path from 'node:path';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
 import { runPreview, runDeploy } from '../core/orchestrator';
+import { ExitCodes } from '../utils/exit-codes';
+import { handleError } from '../utils/errors';
 
 const program = new Command();
 
@@ -67,10 +69,10 @@ collectCommonOptions(
           verbose: !!options.verbose,
           logger,
         });
-        process.exit(0);
+        process.exit(ExitCodes.SUCCESS);
       } catch (err) {
-        console.error(err);
-        process.exit(30);
+        const exitCode = handleError(err, console);
+        process.exit(exitCode);
       }
     })
 );
@@ -92,10 +94,10 @@ collectCommonOptions(
           verbose: !!options.verbose,
           logger,
         });
-        process.exit(0);
+        process.exit(ExitCodes.SUCCESS);
       } catch (err) {
-        console.error(err);
-        process.exit(30);
+        const exitCode = handleError(err, console);
+        process.exit(exitCode);
       }
     })
 );
