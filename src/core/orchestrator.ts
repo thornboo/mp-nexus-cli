@@ -8,6 +8,7 @@ import { createUniAppAdapter } from '../adapters/framework/uni';
 import { ExitCodes } from '../utils/exit-codes';
 import { Errors, handleError } from '../utils/errors';
 import { getGitInfo, applyGitDefaults } from '../utils/git';
+import { createOutputFormatter } from '../utils/output';
 
 export interface RunContext extends CLIOptions {
   logger: Logger;
@@ -84,118 +85,188 @@ async function detectFrameworkOutput(cwd: string, logger: Logger): Promise<strin
 }
 
 export async function runPreview(ctx: RunContext): Promise<PreviewResult> {
-  const fileCfg = await loadUserConfig(ctx.config);
-  const cfg = mergeConfig(ctx, fileCfg);
-  const { projectRoot, outputPath: configuredOutput } = await ensurePaths(cfg);
-
-  const platform = createWeappAdapter();
-
-  if (ctx.dryRun) {
-    const detectedOut = await detectFrameworkOutput(projectRoot, ctx.logger);
-    const outputPath = detectedOut ?? configuredOutput;
-    ctx.logger.info('[dry-run] 预览流程', { projectRoot, outputPath, platform: platform.name });
-    return { success: true, qrcodeImagePath: 'dry-run://qrcode' };
-  }
-  assertMinimalConfig(cfg);
-
-  // Get Git information for auto-defaults
-  const gitInfo = await getGitInfo(projectRoot, ctx.logger);
-  const { desc, ver } = applyGitDefaults({ desc: ctx.desc, ver: ctx.ver }, gitInfo);
+  const outputFormatter = createOutputFormatter(ctx.logger);
+  let detectedFramework: string | undefined;
+  let finalOutputPath: string | undefined;
   
-  if (desc && !ctx.desc) {
-    ctx.logger.info(`[git] Using commit message as description: ${desc}`);
-  }
-  if (ver && !ctx.ver) {
-    ctx.logger.info(`[git] Using package.json version: ${ver}`);
-  }
+  try {
+    const fileCfg = await loadUserConfig(ctx.config);
+    const cfg = mergeConfig(ctx, fileCfg);
+    const { projectRoot, outputPath: configuredOutput } = await ensurePaths(cfg);
 
-  // 构建（若检测到支持的框架）
-  const taro = createTaroAdapter();
-  const uni = createUniAppAdapter();
-  let outputPath = configuredOutput;
-  
-  if (await taro.detect(projectRoot)) {
-    await taro.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-    outputPath = await taro.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-  } else if (await uni.detect(projectRoot)) {
-    await uni.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-    outputPath = await uni.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-  }
+    const platform = createWeappAdapter();
 
-  const res = await platform.preview({
-    projectPath: outputPath,
-    appId: cfg.appId,
-    privateKeyPath: cfg.privateKeyPath,
-    version: ver,
-    desc: desc,
-    logger: ctx.logger,
-    ciOptions: cfg.ciOptions,
-    qrcodeOutputPath: path.resolve(projectRoot, 'preview-qrcode.png'),
-  });
+    if (ctx.dryRun) {
+      const detectedOut = await detectFrameworkOutput(projectRoot, ctx.logger);
+      const outputPath = detectedOut ?? configuredOutput;
+      ctx.logger.info('[dry-run] 预览流程', { projectRoot, outputPath, platform: platform.name });
+      return { success: true, qrcodeImagePath: 'dry-run://qrcode' };
+    }
+    assertMinimalConfig(cfg);
 
-  if (res.success) {
-    ctx.logger.info('预览完成', res);
-  } else {
-    ctx.logger.error('预览失败', res);
+    // Get Git information for auto-defaults
+    const gitInfo = await getGitInfo(projectRoot, ctx.logger);
+    const { desc, ver } = applyGitDefaults({ desc: ctx.desc, ver: ctx.ver }, gitInfo);
+    
+    if (desc && !ctx.desc) {
+      ctx.logger.info(`[git] Using commit message as description: ${desc}`);
+    }
+    if (ver && !ctx.ver) {
+      ctx.logger.info(`[git] Using package.json version: ${ver}`);
+    }
+
+    // 构建（若检测到支持的框架）
+    const taro = createTaroAdapter();
+    const uni = createUniAppAdapter();
+    let outputPath = configuredOutput;
+    
+    if (await taro.detect(projectRoot)) {
+      detectedFramework = 'taro';
+      await taro.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+      outputPath = await taro.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+    } else if (await uni.detect(projectRoot)) {
+      detectedFramework = 'uni-app';
+      await uni.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+      outputPath = await uni.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+    }
+    
+    finalOutputPath = outputPath;
+
+    const res = await platform.preview({
+      projectPath: outputPath,
+      appId: cfg.appId,
+      privateKeyPath: cfg.privateKeyPath,
+      version: ver,
+      desc: desc,
+      logger: ctx.logger,
+      ciOptions: cfg.ciOptions,
+      qrcodeOutputPath: path.resolve(projectRoot, 'preview-qrcode.png'),
+    });
+
+    // Format successful output
+    outputFormatter.formatSuccess(res, {
+      json: ctx.json,
+      verbose: ctx.verbose,
+      operation: 'preview',
+      metadata: {
+        framework: detectedFramework,
+        platform: platform.name,
+        version: ver,
+        description: desc,
+        projectPath: projectRoot,
+        outputPath: finalOutputPath,
+      },
+    });
+
+    return res;
+  } catch (error) {
+    // Format error output
+    outputFormatter.formatError(error, {
+      json: ctx.json,
+      verbose: ctx.verbose,
+      operation: 'preview',
+      metadata: {
+        framework: detectedFramework,
+        platform: 'weapp',
+        projectPath: process.cwd(),
+        outputPath: finalOutputPath,
+      },
+    });
+    
+    throw error;
   }
-  return res;
 }
 
 export async function runDeploy(ctx: RunContext): Promise<UploadResult> {
-  const fileCfg = await loadUserConfig(ctx.config);
-  const cfg = mergeConfig(ctx, fileCfg);
-  const { projectRoot, outputPath: configuredOutput } = await ensurePaths(cfg);
-
-  const platform = createWeappAdapter();
-
-  if (ctx.dryRun) {
-    const detectedOut = await detectFrameworkOutput(projectRoot, ctx.logger);
-    const outputPath = detectedOut ?? configuredOutput;
-    ctx.logger.info('[dry-run] 部署流程', { projectRoot, outputPath, platform: platform.name });
-    return { success: true, version: ctx.ver || 'dry-run' };
-  }
-  assertMinimalConfig(cfg);
-
-  // Get Git information for auto-defaults
-  const gitInfo = await getGitInfo(projectRoot, ctx.logger);
-  const { desc, ver } = applyGitDefaults({ desc: ctx.desc, ver: ctx.ver }, gitInfo);
+  const outputFormatter = createOutputFormatter(ctx.logger);
+  let detectedFramework: string | undefined;
+  let finalOutputPath: string | undefined;
   
-  if (desc && !ctx.desc) {
-    ctx.logger.info(`[git] Using commit message as description: ${desc}`);
-  }
-  if (ver && !ctx.ver) {
-    ctx.logger.info(`[git] Using package.json version: ${ver}`);
-  }
+  try {
+    const fileCfg = await loadUserConfig(ctx.config);
+    const cfg = mergeConfig(ctx, fileCfg);
+    const { projectRoot, outputPath: configuredOutput } = await ensurePaths(cfg);
 
-  // 构建（若检测到支持的框架）
-  const taro = createTaroAdapter();
-  const uni = createUniAppAdapter();
-  let outputPath = configuredOutput;
-  
-  if (await taro.detect(projectRoot)) {
-    await taro.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-    outputPath = await taro.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-  } else if (await uni.detect(projectRoot)) {
-    await uni.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-    outputPath = await uni.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
-  }
+    const platform = createWeappAdapter();
 
-  const res = await platform.upload({
-    projectPath: outputPath,
-    appId: cfg.appId,
-    privateKeyPath: cfg.privateKeyPath,
-    version: ver,
-    desc: desc,
-    logger: ctx.logger,
-    ciOptions: cfg.ciOptions,
-  });
+    if (ctx.dryRun) {
+      const detectedOut = await detectFrameworkOutput(projectRoot, ctx.logger);
+      const outputPath = detectedOut ?? configuredOutput;
+      ctx.logger.info('[dry-run] 部署流程', { projectRoot, outputPath, platform: platform.name });
+      return { success: true, version: ctx.ver || 'dry-run' };
+    }
+    assertMinimalConfig(cfg);
 
-  if (res.success) {
-    ctx.logger.info('部署完成', res);
-  } else {
-    ctx.logger.error('部署失败', res);
+    // Get Git information for auto-defaults
+    const gitInfo = await getGitInfo(projectRoot, ctx.logger);
+    const { desc, ver } = applyGitDefaults({ desc: ctx.desc, ver: ctx.ver }, gitInfo);
+    
+    if (desc && !ctx.desc) {
+      ctx.logger.info(`[git] Using commit message as description: ${desc}`);
+    }
+    if (ver && !ctx.ver) {
+      ctx.logger.info(`[git] Using package.json version: ${ver}`);
+    }
+
+    // 构建（若检测到支持的框架）
+    const taro = createTaroAdapter();
+    const uni = createUniAppAdapter();
+    let outputPath = configuredOutput;
+    
+    if (await taro.detect(projectRoot)) {
+      detectedFramework = 'taro';
+      await taro.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+      outputPath = await taro.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+    } else if (await uni.detect(projectRoot)) {
+      detectedFramework = 'uni-app';
+      await uni.build({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+      outputPath = await uni.getOutputPath({ cwd: projectRoot, mode: ctx.mode, logger: ctx.logger });
+    }
+    
+    finalOutputPath = outputPath;
+
+    const res = await platform.upload({
+      projectPath: outputPath,
+      appId: cfg.appId,
+      privateKeyPath: cfg.privateKeyPath,
+      version: ver,
+      desc: desc,
+      logger: ctx.logger,
+      ciOptions: cfg.ciOptions,
+    });
+
+    // Format successful output
+    outputFormatter.formatSuccess(res, {
+      json: ctx.json,
+      verbose: ctx.verbose,
+      operation: 'deploy',
+      metadata: {
+        framework: detectedFramework,
+        platform: platform.name,
+        version: ver,
+        description: desc,
+        projectPath: projectRoot,
+        outputPath: finalOutputPath,
+      },
+    });
+
+    return res;
+  } catch (error) {
+    // Format error output
+    outputFormatter.formatError(error, {
+      json: ctx.json,
+      verbose: ctx.verbose,
+      operation: 'deploy',
+      metadata: {
+        framework: detectedFramework,
+        platform: 'weapp',
+        projectPath: process.cwd(),
+        outputPath: finalOutputPath,
+      },
+    });
+    
+    throw error;
   }
-  return res;
 }
 
 

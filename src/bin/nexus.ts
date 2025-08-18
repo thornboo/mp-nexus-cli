@@ -40,7 +40,8 @@ function collectCommonOptions(cmd: Command) {
     .option('--ver <x.y.z>', '版本号')
     .option('--config <path>', '自定义配置文件路径')
     .option('--dry-run', '仅打印将执行的步骤，不真正调用 CI')
-    .option('--verbose', '输出更详细日志');
+    .option('--verbose', '输出更详细日志')
+    .option('--json', '输出结构化 JSON 格式结果');
 }
 
 collectCommonOptions(
@@ -58,6 +59,7 @@ collectCommonOptions(
           config: resolveConfigPath(options.config),
           dryRun: !!options.dryRun,
           verbose: !!options.verbose,
+          json: !!options.json,
           logger,
         });
         process.exit(ExitCodes.SUCCESS);
@@ -83,6 +85,7 @@ collectCommonOptions(
           config: resolveConfigPath(options.config),
           dryRun: !!options.dryRun,
           verbose: !!options.verbose,
+          json: !!options.json,
           logger,
         });
         process.exit(ExitCodes.SUCCESS);

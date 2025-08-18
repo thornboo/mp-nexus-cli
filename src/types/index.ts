@@ -23,6 +23,7 @@ export interface CLIOptions {
     config?: string;
     dryRun?: boolean;
     verbose?: boolean;
+    json?: boolean;
 }
 
 /** Root configuration model loaded from `mp-nexus.config.js`. */
