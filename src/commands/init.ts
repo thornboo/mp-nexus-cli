@@ -108,7 +108,8 @@ async function collectConfiguration(
 				{ name: 'uni-app', value: 'uni-app' },
 				{ name: 'Other/Manual setup', value: 'other' },
 			],
-			default: detectedFramework !== 'unknown' ? detectedFramework : 'taro',
+			default:
+				detectedFramework !== 'unknown' ? detectedFramework : 'taro',
 		},
 		{
 			type: 'list',
@@ -192,7 +193,8 @@ async function collectConfiguration(
 
 function generateConfig(answers: InitAnswers): NexusConfig {
 	const config: NexusConfig = {
-		projectType: answers.projectType === 'other' ? undefined : answers.projectType,
+		projectType:
+			answers.projectType === 'other' ? undefined : answers.projectType,
 		platform: answers.platform as any,
 		appId: answers.useEnvFile ? 'process.env.MP_APP_ID' : answers.appId,
 		privateKeyPath: answers.useEnvFile
@@ -217,20 +219,30 @@ async function writeConfigFile(
 /** @type {import('mp-nexus-cli').NexusConfig} */
 module.exports = {
 	// Project framework type (auto-detected if not specified)
-	${config.projectType ? `projectType: '${config.projectType}',` : '// projectType: \'taro\' | \'uni-app\','}
+	${
+		config.projectType
+			? `projectType: '${config.projectType}',`
+			: "// projectType: 'taro' | 'uni-app',"
+	}
 
 	// Target platform
 	platform: '${config.platform}',
 
 	// Mini program App ID
-	appId: ${typeof config.appId === 'string' && config.appId.startsWith('process.env') 
-		? config.appId 
-		: `'${config.appId}'`},
+	appId: ${
+		typeof config.appId === 'string' &&
+		config.appId.startsWith('process.env')
+			? config.appId
+			: `'${config.appId}'`
+	},
 
 	// Path to private key file
-	privateKeyPath: ${typeof config.privateKeyPath === 'string' && config.privateKeyPath.includes('process.env') 
-		? config.privateKeyPath 
-		: `'${config.privateKeyPath}'`},
+	privateKeyPath: ${
+		typeof config.privateKeyPath === 'string' &&
+		config.privateKeyPath.includes('process.env')
+			? config.privateKeyPath
+			: `'${config.privateKeyPath}'`
+	},
 
 	// Project root path
 	projectPath: '${config.projectPath}',
@@ -288,17 +300,21 @@ MP_PRIVATE_KEY_PATH=${answers.privateKeyPath}
 	try {
 		await fs.writeFile(envPath, envContent, 'utf-8');
 		logger.info(`✅ Environment file created: ${envPath}`);
-		
+
 		// Check and update .gitignore
 		await updateGitignore(cwd, logger);
 	} catch (error) {
-		logger.warn(`⚠️  Could not create .env file: ${error instanceof Error ? error.message : String(error)}`);
+		logger.warn(
+			`⚠️  Could not create .env file: ${
+				error instanceof Error ? error.message : String(error)
+			}`
+		);
 	}
 }
 
 async function updateGitignore(cwd: string, logger: Logger): Promise<void> {
 	const gitignorePath = path.resolve(cwd, '.gitignore');
-	
+
 	try {
 		let gitignoreContent = '';
 		try {
@@ -308,9 +324,11 @@ async function updateGitignore(cwd: string, logger: Logger): Promise<void> {
 		}
 
 		if (!gitignoreContent.includes('.env')) {
-			const newContent = gitignoreContent + (gitignoreContent ? '\n' : '') + 
+			const newContent =
+				gitignoreContent +
+				(gitignoreContent ? '\n' : '') +
 				'# Environment variables\n.env\n.env.local\n.env.*.local\n';
-			
+
 			await fs.writeFile(gitignorePath, newContent, 'utf-8');
 			logger.info('✅ Updated .gitignore to include .env files');
 		}
@@ -321,16 +339,20 @@ async function updateGitignore(cwd: string, logger: Logger): Promise<void> {
 
 function showCompletionMessage(answers: InitAnswers, logger: Logger): void {
 	logger.info('\n🎉 Configuration completed successfully!\n');
-	
+
 	logger.info('Next steps:');
 	logger.info('1. Verify your configuration in mp-nexus.config.js');
-	logger.info(`2. Ensure your private key file exists at: ${answers.privateKeyPath}`);
-	
+	logger.info(
+		`2. Ensure your private key file exists at: ${answers.privateKeyPath}`
+	);
+
 	if (answers.useEnvFile) {
-		logger.info('3. Review and update the .env file with your actual values');
+		logger.info(
+			'3. Review and update the .env file with your actual values'
+		);
 		logger.info('4. Make sure .env is added to your .gitignore file');
 	}
-	
+
 	logger.info('\nYou can now run:');
 	logger.info('  nexus preview  - Generate preview QR code');
 	logger.info('  nexus deploy   - Deploy to production');
