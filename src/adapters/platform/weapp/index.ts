@@ -1,159 +1,203 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import * as ci from 'miniprogram-ci';
-import type { PlatformAdapter, PreviewOptions, PreviewResult, UploadOptions, UploadResult } from '../../../types/adapters';
+import type {
+	PlatformAdapter,
+	PreviewOptions,
+	PreviewResult,
+	UploadOptions,
+	UploadResult,
+} from '../../../types/adapters';
+import { Errors } from '../../../utils/errors';
+import { withRetry, RetryPresets } from '../../../utils/retry';
 
 export class WeappPlatformAdapter implements PlatformAdapter {
-    name = 'weapp';
+	name = 'weapp';
 
-    private async ensurePrivateKey(privateKeyPath: string): Promise<void> {
-        try {
-            await fs.access(privateKeyPath);
-        } catch {
-            throw new Error(`私钥文件不存在: ${privateKeyPath}`);
-        }
-    }
+	private async ensurePrivateKey(privateKeyPath: string): Promise<void> {
+		try {
+			await fs.access(privateKeyPath);
+		} catch {
+			throw Errors.invalidPrivateKey(privateKeyPath);
+		}
+	}
 
-    async preview(options: PreviewOptions): Promise<PreviewResult> {
-        await this.ensurePrivateKey(options.privateKeyPath);
+	async preview(options: PreviewOptions): Promise<PreviewResult> {
+		await this.ensurePrivateKey(options.privateKeyPath);
 
-        const project = new ci.Project({
-            appid: options.appId,
-            type: 'miniProgram',
-            projectPath: options.projectPath,
-            privateKeyPath: options.privateKeyPath,
-            ignores: ['node_modules/**/*'],
-        });
+		const project = new ci.Project({
+			appid: options.appId,
+			type: 'miniProgram',
+			projectPath: options.projectPath,
+			privateKeyPath: options.privateKeyPath,
+			ignores: ['node_modules/**/*'],
+		});
 
-        try {
-            options.logger.info('[weapp] 开始生成预览二维码...');
-            
-            // First generate terminal QR code for immediate display
-            console.log('\n📱 预览二维码：\n');
-            const terminalResult = await ci.preview({
-                project,
-                version: options.version || '1.0.0',
-                desc: options.desc || '预览版本',
-                qrcodeFormat: 'terminal',
-                robot: 1,
-                setting: {
-                    es6: true,
-                    minify: true,
-                    codeProtect: true,
-                    ...options.ciOptions?.setting,
-                },
-                ...options.ciOptions,
-            });
-            
-            // Also generate image file for saving
-            const imagePath = options.qrcodeOutputPath || path.resolve(options.projectPath, 'preview-qrcode.png');
-            const imageResult = await ci.preview({
-                project,
-                version: options.version || '1.0.0',
-                desc: options.desc || '预览版本',
-                qrcodeFormat: 'image',
-                qrcodeOutputDest: imagePath,
-                robot: 1,
-                setting: {
-                    es6: true,
-                    minify: true,
-                    codeProtect: true,
-                    ...options.ciOptions?.setting,
-                },
-                ...options.ciOptions,
-            });
+		try {
+			options.logger.info(
+				'[weapp] Starting preview QR code generation...'
+			);
 
-            options.logger.info('[weapp] 预览二维码已生成');
-            console.log(`\n二维码已保存至: ${imagePath}\n`);
-            
-            return {
-                success: true,
-                qrcodeImagePath: imagePath,
-                raw: { terminal: terminalResult, image: imageResult },
-            };
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            options.logger.error('[weapp] 预览失败', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
-            
-            // Provide helpful error suggestions
-            if (errorMessage.includes('appid')) {
-                options.logger.error('[weapp] 提示: 请检查 appId 配置是否正确');
-            } else if (errorMessage.includes('private') || errorMessage.includes('key')) {
-                options.logger.error('[weapp] 提示: 请检查私钥文件路径和权限');
-            } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
-                options.logger.error('[weapp] 提示: 网络连接问题，请检查网络或稍后重试');
-            }
-            
-            return {
-                success: false,
-                raw: error,
-            };
-        }
-    }
+			const result = await withRetry(
+				async () => {
+					// First generate terminal QR code for immediate display
+					console.log('\n📱 Preview QR Code:\n');
+					const terminalResult = await ci.preview({
+						project,
+						version: options.version || '1.0.0',
+						desc: options.desc || 'Preview version',
+						qrcodeFormat: 'terminal',
+						robot: 1,
+						setting: {
+							es6: true,
+							minify: true,
+							codeProtect: true,
+							...options.ciOptions?.setting,
+						},
+						...options.ciOptions,
+					});
 
-    async upload(options: UploadOptions): Promise<UploadResult> {
-        await this.ensurePrivateKey(options.privateKeyPath);
+					// Also generate image file for saving
+					const imagePath =
+						options.qrcodeOutputPath ||
+						path.resolve(options.projectPath, 'preview-qrcode.png');
+					const imageResult = await ci.preview({
+						project,
+						version: options.version || '1.0.0',
+						desc: options.desc || 'Preview version',
+						qrcodeFormat: 'image',
+						qrcodeOutputDest: imagePath,
+						robot: 1,
+						setting: {
+							es6: true,
+							minify: true,
+							codeProtect: true,
+							...options.ciOptions?.setting,
+						},
+						...options.ciOptions,
+					});
 
-        const project = new ci.Project({
-            appid: options.appId,
-            type: 'miniProgram',
-            projectPath: options.projectPath,
-            privateKeyPath: options.privateKeyPath,
-            ignores: ['node_modules/**/*'],
-        });
+					return {
+						terminal: terminalResult,
+						image: imageResult,
+						imagePath,
+					};
+				},
+				{ ...RetryPresets.network, logger: options.logger },
+				'WeApp preview generation'
+			);
 
-        try {
-            options.logger.info('[weapp] 开始上传代码...');
-            
-            const uploadResult = await ci.upload({
-                project,
-                version: options.version || '1.0.0',
-                desc: options.desc || '上传版本',
-                robot: 1,
-                setting: {
-                    es6: true,
-                    minify: true,
-                    codeProtect: true,
-                    ...options.ciOptions?.setting,
-                },
-                ...options.ciOptions,
-            });
+			options.logger.info(
+				'[weapp] Preview QR code generated successfully'
+			);
+			console.log(`\nQR code saved to: ${result.imagePath}\n`);
 
-            options.logger.info('[weapp] 上传完成', {
-                version: uploadResult.version,
-                subPackageInfo: uploadResult.subPackageInfo,
-            });
+			return {
+				success: true,
+				qrcodeImagePath: result.imagePath,
+				raw: { terminal: result.terminal, image: result.image },
+			};
+		} catch (error) {
+			const classified = this.classifyWeAppError(error);
+			throw classified;
+		}
+	}
 
-            return {
-                success: true,
-                version: uploadResult.version,
-                raw: uploadResult,
-            };
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            options.logger.error('[weapp] 上传失败', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
-            
-            // Provide helpful error suggestions
-            if (errorMessage.includes('appid')) {
-                options.logger.error('[weapp] 提示: 请检查 appId 配置是否正确');
-            } else if (errorMessage.includes('private') || errorMessage.includes('key')) {
-                options.logger.error('[weapp] 提示: 请检查私钥文件路径和权限');
-            } else if (errorMessage.includes('version')) {
-                options.logger.error('[weapp] 提示: 版本号可能已存在或格式不正确');
-            } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
-                options.logger.error('[weapp] 提示: 网络连接问题，请检查网络或稍后重试');
-            }
-            
-            return {
-                success: false,
-                raw: error,
-            };
-        }
-    }
+	private classifyWeAppError(error: unknown): Error {
+		if (!(error instanceof Error)) {
+			return Errors.ciOperationFailed('unknown', {
+				originalError: String(error),
+			});
+		}
+
+		const message = error.message.toLowerCase();
+
+		if (message.includes('appid') || message.includes('invalid app')) {
+			return Errors.invalidAppId('provided appId');
+		}
+
+		if (
+			message.includes('private') ||
+			message.includes('key') ||
+			message.includes('signature')
+		) {
+			return Errors.invalidPrivateKey('provided private key');
+		}
+
+		if (
+			message.includes('network') ||
+			message.includes('timeout') ||
+			message.includes('connect')
+		) {
+			return Errors.networkError('miniprogram-ci operation', {
+				originalError: error.message,
+			});
+		}
+
+		if (message.includes('version') && message.includes('exist')) {
+			return Errors.deployVersionExists('current version');
+		}
+
+		if (message.includes('auth') || message.includes('permission')) {
+			return Errors.apiAuthError('WeChat platform');
+		}
+
+		return Errors.ciOperationFailed('miniprogram-ci', {
+			originalError: error.message,
+		});
+	}
+
+	async upload(options: UploadOptions): Promise<UploadResult> {
+		await this.ensurePrivateKey(options.privateKeyPath);
+
+		const project = new ci.Project({
+			appid: options.appId,
+			type: 'miniProgram',
+			projectPath: options.projectPath,
+			privateKeyPath: options.privateKeyPath,
+			ignores: ['node_modules/**/*'],
+		});
+
+		try {
+			options.logger.info('[weapp] Starting code upload...');
+
+			const uploadResult = await withRetry(
+				async () => {
+					return await ci.upload({
+						project,
+						version: options.version || '1.0.0',
+						desc: options.desc || 'Upload version',
+						robot: 1,
+						setting: {
+							es6: true,
+							minify: true,
+							codeProtect: true,
+							...options.ciOptions?.setting,
+						},
+						...options.ciOptions,
+					});
+				},
+				{ ...RetryPresets.network, logger: options.logger },
+				'WeApp code upload'
+			);
+
+			options.logger.info('[weapp] Upload completed successfully', {
+				version: uploadResult.version,
+				subPackageInfo: uploadResult.subPackageInfo,
+			});
+
+			return {
+				success: true,
+				version: uploadResult.version,
+				raw: uploadResult,
+			};
+		} catch (error) {
+			const classified = this.classifyWeAppError(error);
+			throw classified;
+		}
+	}
 }
 
 export function createWeappAdapter(): PlatformAdapter {
-    return new WeappPlatformAdapter();
+	return new WeappPlatformAdapter();
 }
-
-
