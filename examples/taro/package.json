@@ -1,0 +1,10 @@
+{
+  "name": "taro-example",
+  "version": "1.0.0",
+  "dependencies": {
+    "@tarojs/taro": "^3.6.0"
+  },
+  "scripts": {
+    "build:weapp": "taro build --type weapp"
+  }
+}

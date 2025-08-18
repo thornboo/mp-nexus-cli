@@ -28,12 +28,31 @@ export class WeappPlatformAdapter implements PlatformAdapter {
         try {
             options.logger.info('[weapp] 开始生成预览二维码...');
             
-            const previewResult = await ci.preview({
+            // First generate terminal QR code for immediate display
+            console.log('\n📱 预览二维码：\n');
+            const terminalResult = await ci.preview({
+                project,
+                version: options.version || '1.0.0',
+                desc: options.desc || '预览版本',
+                qrcodeFormat: 'terminal',
+                robot: 1,
+                setting: {
+                    es6: true,
+                    minify: true,
+                    codeProtect: true,
+                    ...options.ciOptions?.setting,
+                },
+                ...options.ciOptions,
+            });
+            
+            // Also generate image file for saving
+            const imagePath = options.qrcodeOutputPath || path.resolve(options.projectPath, 'preview-qrcode.png');
+            const imageResult = await ci.preview({
                 project,
                 version: options.version || '1.0.0',
                 desc: options.desc || '预览版本',
                 qrcodeFormat: 'image',
-                qrcodeOutputDest: options.qrcodeOutputPath || path.resolve(options.projectPath, 'preview-qrcode.png'),
+                qrcodeOutputDest: imagePath,
                 robot: 1,
                 setting: {
                     es6: true,
@@ -45,14 +64,26 @@ export class WeappPlatformAdapter implements PlatformAdapter {
             });
 
             options.logger.info('[weapp] 预览二维码已生成');
+            console.log(`\n二维码已保存至: ${imagePath}\n`);
             
             return {
                 success: true,
-                qrcodeImagePath: previewResult.qrcodeFilePath,
-                raw: previewResult,
+                qrcodeImagePath: imagePath,
+                raw: { terminal: terminalResult, image: imageResult },
             };
         } catch (error) {
-            options.logger.error('[weapp] 预览失败', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            options.logger.error('[weapp] 预览失败', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+            
+            // Provide helpful error suggestions
+            if (errorMessage.includes('appid')) {
+                options.logger.error('[weapp] 提示: 请检查 appId 配置是否正确');
+            } else if (errorMessage.includes('private') || errorMessage.includes('key')) {
+                options.logger.error('[weapp] 提示: 请检查私钥文件路径和权限');
+            } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
+                options.logger.error('[weapp] 提示: 网络连接问题，请检查网络或稍后重试');
+            }
+            
             return {
                 success: false,
                 raw: error,
@@ -99,7 +130,20 @@ export class WeappPlatformAdapter implements PlatformAdapter {
                 raw: uploadResult,
             };
         } catch (error) {
-            options.logger.error('[weapp] 上传失败', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            options.logger.error('[weapp] 上传失败', { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+            
+            // Provide helpful error suggestions
+            if (errorMessage.includes('appid')) {
+                options.logger.error('[weapp] 提示: 请检查 appId 配置是否正确');
+            } else if (errorMessage.includes('private') || errorMessage.includes('key')) {
+                options.logger.error('[weapp] 提示: 请检查私钥文件路径和权限');
+            } else if (errorMessage.includes('version')) {
+                options.logger.error('[weapp] 提示: 版本号可能已存在或格式不正确');
+            } else if (errorMessage.includes('network') || errorMessage.includes('timeout')) {
+                options.logger.error('[weapp] 提示: 网络连接问题，请检查网络或稍后重试');
+            }
+            
             return {
                 success: false,
                 raw: error,

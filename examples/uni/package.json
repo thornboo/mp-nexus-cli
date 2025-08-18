@@ -1,0 +1,10 @@
+{
+  "name": "uni-app-example",
+  "version": "1.0.0",
+  "dependencies": {
+    "@dcloudio/uni-app": "^3.0.0"
+  },
+  "scripts": {
+    "build:mp-weixin": "uni-app build --platform mp-weixin"
+  }
+}

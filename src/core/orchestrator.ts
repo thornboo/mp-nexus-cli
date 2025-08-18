@@ -1,6 +1,5 @@
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import qr from 'qrcode-terminal';
 import type { CLIOptions, Logger, NexusConfig } from '../types';
 import type { PreviewResult, UploadResult } from '../types/adapters';
 import { createWeappAdapter } from '../adapters/platform/weapp';
@@ -124,18 +123,6 @@ export async function runPreview(ctx: RunContext): Promise<PreviewResult> {
 
   if (res.success) {
     ctx.logger.info('预览完成', res);
-    
-    // 在终端显示二维码
-    if (res.qrcodeImagePath) {
-      try {
-        await fs.access(res.qrcodeImagePath);
-        console.log('\n📱 预览二维码：\n');
-        qr.generate(res.qrcodeImagePath, { small: true });
-        console.log(`\n二维码已保存至: ${res.qrcodeImagePath}\n`);
-      } catch {
-        ctx.logger.warn('二维码文件不存在，无法在终端显示');
-      }
-    }
   } else {
     ctx.logger.error('预览失败', res);
   }

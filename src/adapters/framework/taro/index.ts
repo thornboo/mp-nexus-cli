@@ -67,7 +67,18 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
 
       options.logger.info('[taro] 构建完成');
     } catch (error) {
-      options.logger.error('[taro] 构建失败', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      options.logger.error('[taro] 构建失败', { error: errorMessage });
+      
+      // Provide helpful error suggestions
+      if (errorMessage.includes('taro')) {
+        options.logger.error('[taro] 提示: 请确保已安装 Taro CLI: npm install -g @tarojs/cli');
+      } else if (errorMessage.includes('config')) {
+        options.logger.error('[taro] 提示: 请检查 Taro 项目配置文件');
+      } else if (errorMessage.includes('dependencies')) {
+        options.logger.error('[taro] 提示: 请检查项目依赖是否已正确安装');
+      }
+      
       throw error;
     }
   }

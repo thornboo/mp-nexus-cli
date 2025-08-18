@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { runPreview, runDeploy } from '../core/orchestrator';
 import { ExitCodes } from '../utils/exit-codes';
 import { handleError } from '../utils/errors';
+import { createLogger } from '../utils/logger';
 
 const program = new Command();
 
@@ -24,17 +25,7 @@ function loadEnv(mode?: string) {
   }
 }
 
-function createLogger(verbose?: boolean) {
-  return {
-    info: (...args: unknown[]) => console.log('[info]', ...args),
-    warn: (...args: unknown[]) => console.warn('[warn]', ...args),
-    error: (...args: unknown[]) => console.error('[error]', ...args),
-    debug: (...args: unknown[]) => {
-      if (verbose) console.log('[debug]', ...args);
-    },
-    child: (bindings: Record<string, unknown>) => createLogger(verbose),
-  };
-}
+// createLogger is now imported from utils/logger
 
 function resolveConfigPath(config?: string): string | undefined {
   if (!config) return undefined;
