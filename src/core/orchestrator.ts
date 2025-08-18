@@ -7,6 +7,7 @@ import { createTaroAdapter } from '../adapters/framework/taro';
 import { createUniAppAdapter } from '../adapters/framework/uni';
 import { ExitCodes } from '../utils/exit-codes';
 import { Errors, handleError } from '../utils/errors';
+import { getGitInfo, applyGitDefaults } from '../utils/git';
 
 export interface RunContext extends CLIOptions {
   logger: Logger;
@@ -97,6 +98,17 @@ export async function runPreview(ctx: RunContext): Promise<PreviewResult> {
   }
   assertMinimalConfig(cfg);
 
+  // Get Git information for auto-defaults
+  const gitInfo = await getGitInfo(projectRoot, ctx.logger);
+  const { desc, ver } = applyGitDefaults({ desc: ctx.desc, ver: ctx.ver }, gitInfo);
+  
+  if (desc && !ctx.desc) {
+    ctx.logger.info(`[git] Using commit message as description: ${desc}`);
+  }
+  if (ver && !ctx.ver) {
+    ctx.logger.info(`[git] Using package.json version: ${ver}`);
+  }
+
   // 构建（若检测到支持的框架）
   const taro = createTaroAdapter();
   const uni = createUniAppAdapter();
@@ -114,8 +126,8 @@ export async function runPreview(ctx: RunContext): Promise<PreviewResult> {
     projectPath: outputPath,
     appId: cfg.appId,
     privateKeyPath: cfg.privateKeyPath,
-    version: ctx.ver,
-    desc: ctx.desc,
+    version: ver,
+    desc: desc,
     logger: ctx.logger,
     ciOptions: cfg.ciOptions,
     qrcodeOutputPath: path.resolve(projectRoot, 'preview-qrcode.png'),
@@ -144,6 +156,17 @@ export async function runDeploy(ctx: RunContext): Promise<UploadResult> {
   }
   assertMinimalConfig(cfg);
 
+  // Get Git information for auto-defaults
+  const gitInfo = await getGitInfo(projectRoot, ctx.logger);
+  const { desc, ver } = applyGitDefaults({ desc: ctx.desc, ver: ctx.ver }, gitInfo);
+  
+  if (desc && !ctx.desc) {
+    ctx.logger.info(`[git] Using commit message as description: ${desc}`);
+  }
+  if (ver && !ctx.ver) {
+    ctx.logger.info(`[git] Using package.json version: ${ver}`);
+  }
+
   // 构建（若检测到支持的框架）
   const taro = createTaroAdapter();
   const uni = createUniAppAdapter();
@@ -161,8 +184,8 @@ export async function runDeploy(ctx: RunContext): Promise<UploadResult> {
     projectPath: outputPath,
     appId: cfg.appId,
     privateKeyPath: cfg.privateKeyPath,
-    version: ctx.ver,
-    desc: ctx.desc,
+    version: ver,
+    desc: desc,
     logger: ctx.logger,
     ciOptions: cfg.ciOptions,
   });

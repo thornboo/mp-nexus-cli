@@ -18,7 +18,8 @@
     "dotenv": "^16.4.5",
     "execa": "^9.6.0",
     "miniprogram-ci": "^2.1.14",
-    "qrcode-terminal": "^0.12.0"
+    "qrcode-terminal": "^0.12.0",
+    "simple-git": "^3.28.0"
   },
   "devDependencies": {
     "tsup": "^8.1.0",
