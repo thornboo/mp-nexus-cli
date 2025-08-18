@@ -1,25 +1,51 @@
-# 配置参考（草稿）
+# Configuration Reference
 
-`mp-nexus.config.js` 是所有配置的唯一入口。若工具链支持，也可使用 TS 编写。
+The `mp-nexus.config.js` file is the single entry point for all configuration. TypeScript configuration files are also supported if your toolchain allows.
 
-## 优先级
+## Quick Start
 
-1. CLI 选项（`--mode --desc --ver --config`）
-2. `.env.<mode>`（例如 `.env.production`）
-3. `.env`
-4. `mp-nexus.config.js` 中的默认值
+The easiest way to create a configuration file is using the interactive init command:
 
-## 模型（Schema）
+```bash
+nexus init
+```
 
-```ts
+This will auto-detect your project framework and guide you through the configuration process.
+
+## Configuration Priority
+
+1. CLI options (`--mode --desc --ver --config`)
+2. Environment variables from `.env.<mode>` (e.g., `.env.production`)
+3. Environment variables from `.env`
+4. Values in `mp-nexus.config.js`
+5. Default values
+
+## Configuration Schema
+
+```typescript
 export interface NexusConfig {
+  // Project framework type (auto-detected if not specified)
   projectType?: 'taro' | 'uni-app';
-  platform?: 'weapp' | 'alipay' | string;
+  
+  // Target platform
+  platform?: 'weapp' | 'alipay' | 'tt' | 'qq';
+  
+  // Mini program App ID (required)
   appId: string;
+  
+  // Path to private key file (required)
   privateKeyPath: string;
-  projectPath?: string; // 默认 '.'
-  outputDir?: string;   // 例如 'dist/weapp'
+  
+  // Project root path (default: '.')
+  projectPath?: string;
+  
+  // Build output directory (auto-detected if not specified)
+  outputDir?: string;
+  
+  // Additional options passed to miniprogram-ci
   ciOptions?: Record<string, unknown>;
+  
+  // Notification settings (future feature)
   notify?: {
     webhook?: string;
     provider?: 'feishu' | 'dingtalk' | 'wechatwork' | 'custom';
@@ -28,22 +54,60 @@ export interface NexusConfig {
 }
 ```
 
-## 示例
+## Configuration Examples
 
-```js
+### Basic Configuration
+```javascript
+// mp-nexus.config.js
+module.exports = {
+  projectType: 'taro',
+  platform: 'weapp',
+  appId: 'wx1234567890abcdef',
+  privateKeyPath: './private.key',
+  projectPath: '.',
+  outputDir: 'dist/weapp',
+  ciOptions: {}
+};
+```
+
+### Environment-based Configuration
+```javascript
+// mp-nexus.config.js
 module.exports = {
   projectType: 'taro',
   platform: 'weapp',
   appId: process.env.MP_APP_ID,
-  privateKeyPath: './private.key',
+  privateKeyPath: process.env.MP_PRIVATE_KEY_PATH || './private.key',
   projectPath: '.',
   outputDir: 'dist/weapp',
-  ciOptions: {},
-  notify: {
-    provider: 'feishu',
-    webhook: process.env.FEISHU_WEBHOOK
-  }
-}
+  ciOptions: {
+    setting: {
+      es6: true,
+      minify: true,
+      codeProtect: true,
+    },
+  },
+};
+```
+
+### Multi-platform Configuration
+```javascript
+// mp-nexus.config.js
+const platform = process.env.TARGET_PLATFORM || 'weapp';
+
+module.exports = {
+  projectType: 'uni-app',
+  platform,
+  appId: process.env[`MP_APP_ID_${platform.toUpperCase()}`],
+  privateKeyPath: `./keys/private-${platform}.key`,
+  outputDir: `dist/build/mp-${platform === 'weapp' ? 'weixin' : platform}`,
+  ciOptions: {
+    setting: {
+      es6: platform === 'weapp',
+      minify: true,
+    },
+  },
+};
 ```
 
 ## 提示

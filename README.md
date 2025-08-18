@@ -2,6 +2,15 @@
 
 统一小程序项目的一键预览/部署 CLI。聚合框架构建（Taro/uni-app）与 `miniprogram-ci` 上传/预览，提供标准化流程与可扩展适配器体系。
 
+## 新功能特性
+
+✨ **最新更新**：
+- 🚀 **交互式初始化**：`nexus init` 命令自动检测项目并生成配置
+- 🔄 **Git 信息集成**：自动使用 commit message 作为描述，package.json 版本作为版本号
+- 📊 **结构化输出**：支持 `--json` 参数输出 JSON 格式结果，适配 CI/CD 流程
+- 🛡️ **增强错误处理**：智能错误分类、重试机制和详细的解决建议
+- 🎯 **终端二维码**：直接在命令行显示预览二维码，无需额外工具
+
 ## 快速开始
 
 1) 安装（占位，发布后替换为 npm 包名）
@@ -34,21 +43,22 @@ module.exports = {
 3) 常用命令
 
 ```bash
+# 初始化配置：交互式创建配置文件
+nexus init
+
 # 预览：编译 + 生成二维码（终端渲染）
 nexus preview --mode dev --desc "test preview"
 
 # 部署：编译 + 上传为新版本
 nexus deploy --mode prod --desc "release: v1.2.3" --ver 1.2.3
 
-# 初始化交互式配置（增强项）
-nexus init
-
-# 其他常见参数
+# 通用参数
 # --mode <env>   指定 .env 文件模式（如 production）
-# --desc <text>  版本描述；若未提供，可自动读取最近一次 Git 提交
-# --ver <x.y.z>  版本号；若未提供，可读取 package.json version
+# --desc <text>  版本描述；若未提供，自动读取最近一次 Git 提交
+# --ver <x.y.z>  版本号；若未提供，读取 package.json version
 # --dry-run      仅打印将要执行的步骤，不真正上传/预览
 # --verbose      输出更详细的过程日志
+# --json         输出结构化 JSON 格式结果（适用于 CI/CD）
 ```
 
 ## 文档索引

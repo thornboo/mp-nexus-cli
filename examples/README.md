@@ -1,25 +1,53 @@
-# examples
+# Example Projects
 
-示例目录用于验证 mp-nexus-cli 在 Taro 与 uni-app 项目中的最小接入方式。示例仅提供骨架文件，请在真实项目或补齐依赖后再运行命令。
+This directory contains example projects for testing and demonstrating `mp-nexus-cli` functionality with Taro and uni-app frameworks.
 
-## 目录
+## Directory Structure
 
-- `taro/`：Taro 项目示例（产物目录默认 `dist/weapp`）
-- `uni/`：uni-app 项目示例（产物目录建议 `dist/build/mp-weixin`）
+- `taro/`: Taro project example (default output: `dist/weapp`)
+- `uni/`: uni-app project example (default output: `dist/build/mp-weixin`)
 
-## 使用步骤
+## Quick Start
 
-1. 在对应目录的 `mp-nexus.config.js` 中填入你的 `appId` 和 `privateKeyPath`。
-2. 在该示例目录下执行 CLI 命令：
-
+### Option 1: Interactive Setup (Recommended)
 ```bash
-# 预览
-nexus preview --mode dev --desc "examples preview"
-
-# 部署
-nexus deploy --mode prod --desc "examples deploy" --ver 0.1.0
+cd examples/taro  # or examples/uni
+nexus init
 ```
 
-> 注意：示例并未包含完整框架依赖与代码，建议在你的真实项目中验证。
+### Option 2: Manual Configuration
+1. Edit the `mp-nexus.config.js` file in the desired example directory
+2. Set your actual `appId` and `privateKeyPath` values
+3. Or use environment variables:
+   ```bash
+   export MP_APP_ID="your-actual-app-id"
+   export MP_PRIVATE_KEY_PATH="./path/to/your/private.key"
+   ```
+
+## Testing Commands
+
+```bash
+# Test preview with auto-detection
+nexus preview --dry-run --verbose
+
+# Test deployment
+nexus deploy --dry-run --mode prod --desc "example deploy" --ver 0.1.0
+
+# Test JSON output format
+nexus preview --json --dry-run
+
+# Test different environment modes
+nexus preview --mode development --dry-run
+```
+
+## Features Demonstrated
+
+- ✅ **Framework Auto-detection**: Automatically detects Taro/uni-app projects
+- ✅ **Environment Configuration**: Uses environment variables for sensitive data
+- ✅ **Git Integration**: Automatic version and description detection
+- ✅ **Structured Output**: Both human-readable and JSON formats
+- ✅ **Error Handling**: Comprehensive error classification and suggestions
+
+> **Note**: These examples provide minimal project skeletons. For complete functionality testing, use in real projects with full dependencies installed.
 
 

@@ -1,42 +1,130 @@
-# CLI 参考（草稿）
+# CLI Reference
 
-## 命令
+## Commands
 
-- `nexus preview`：
-  - 描述：构建项目并通过平台 CI 生成预览，若终端支持则在终端打印二维码。
-  - 选项：
-    - `--mode <env>`：加载 `.env.<env>` 并相应设置 `NODE_ENV`
-    - `--desc <text>`：版本描述（若缺省，回落为最近一次 Git 提交标题）
-    - `--ver <x.y.z>`：版本号（若缺省，回落为 `package.json` 的 `version`）
-    - `--config <path>`：自定义配置文件路径
-    - `--dry-run`：不调用平台 CI，仅打印计划执行的步骤
-    - `--verbose`：输出更详细日志
+### `nexus init`
+Initialize configuration file interactively.
 
-- `nexus deploy`：
-  - 描述：构建项目并通过平台 CI 以新版本形式上传
-  - 选项：同 `preview`
+**Description**: Auto-detect project framework and create configuration through interactive prompts.
 
-- `nexus init`（增强功能）：
-  - 描述：交互式向导生成 `mp-nexus.config.js`
+**Options**:
+- `--force`: Overwrite existing configuration file without confirmation
 
-## 退出码
+**Features**:
+- Automatic framework detection (Taro/uni-app)
+- Multi-platform support (WeChat, Alipay, ByteDance, QQ)
+- Optional .env file generation for sensitive data
+- Automatic .gitignore updates
 
-- `0`：成功
-- `10x`：输入/配置错误（例如缺少 appId/privateKeyPath）
-- `20x`：构建错误（框架适配器）
-- `30x`：CI 错误（平台适配器）
-- `40x`：环境/运行时错误
+### `nexus preview`
+Build project and generate preview QR code.
 
-## 示例
+**Description**: Build project using detected framework and generate preview QR code via platform CI. QR code is displayed both in terminal and saved as image file.
 
-```bash
-nexus preview --mode dev --desc "test preview" 
-nexus deploy --mode prod --desc "release v1.2.3" --ver 1.2.3
+**Options**:
+- `--mode <env>`: Load `.env.<env>` file and set `NODE_ENV`
+- `--desc <text>`: Version description (auto-fallback to latest Git commit message)
+- `--ver <x.y.z>`: Version number (auto-fallback to `package.json` version)
+- `--config <path>`: Custom configuration file path
+- `--dry-run`: Print planned steps without calling platform CI
+- `--verbose`: Output detailed logs and debug information
+- `--json`: Output structured JSON format results
+
+### `nexus deploy`
+Build project and upload as new version.
+
+**Description**: Build project using detected framework and upload to platform as new version.
+
+**Options**: Same as `preview` command
+
+## Exit Codes
+
+- `0`: Success
+- `1`: Unknown error
+- `2`: Invalid arguments
+- `3-4`: Configuration errors
+- `20-22`: File system errors
+- `40-42`: Network/API errors
+- `60-62`: Build errors
+- `80-82`: Deployment errors
+- `100-102`: Platform-specific errors (WeApp)
+
+## Output Formats
+
+### Human-readable (Default)
+```
+🎉 Preview completed successfully!
+📦 Framework: taro
+🎯 Platform: weapp
+🏷️  Version: 1.0.0
+📝 Description: feat: add new feature
+📱 QR code saved: ./preview-qrcode.png
 ```
 
-## 说明
+### JSON Format (`--json`)
+```json
+{
+  "success": true,
+  "timestamp": "2025-01-01T00:00:00.000Z",
+  "operation": "preview",
+  "data": {
+    "success": true,
+    "qrcodeImagePath": "./preview-qrcode.png"
+  },
+  "metadata": {
+    "framework": "taro",
+    "platform": "weapp",
+    "version": "1.0.0",
+    "description": "feat: add new feature"
+  }
+}
+```
 
-- CLI 选项优先级：CLI > .env.<mode> > .env > 配置默认值
-- 使用 `--verbose` 打印结构化日志与排障提示
+## Examples
+
+### Basic Usage
+```bash
+# Initialize configuration
+nexus init
+
+# Preview with auto-detected settings
+nexus preview
+
+# Deploy with specific version
+nexus deploy --ver 1.2.3 --desc "Release version 1.2.3"
+```
+
+### Advanced Usage
+```bash
+# Preview with environment mode
+nexus preview --mode development --verbose
+
+# Deploy with JSON output for CI/CD
+nexus deploy --json --mode production
+
+# Dry run to check configuration
+nexus preview --dry-run --verbose
+```
+
+### CI/CD Integration
+```bash
+# GitHub Actions example
+nexus deploy --json --mode production --desc "$GITHUB_SHA" > deploy-result.json
+```
+
+## Configuration Priority
+
+1. CLI options (highest priority)
+2. Environment variables from `.env.<mode>` file
+3. Environment variables from `.env` file
+4. Configuration file values
+5. Default values (lowest priority)
+
+## Auto-detection Features
+
+- **Framework Detection**: Automatically detects Taro or uni-app projects
+- **Git Integration**: Uses latest commit message as default description
+- **Version Detection**: Uses package.json version as default version number
+- **Output Path**: Automatically determines build output directory
 
 
