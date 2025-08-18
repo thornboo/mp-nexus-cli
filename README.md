@@ -1,128 +1,286 @@
 # mp-nexus-cli
 
-统一小程序项目的一键预览/部署 CLI。聚合框架构建（Taro/uni-app）与 `miniprogram-ci` 上传/预览，提供标准化流程与可扩展适配器体系。
+A unified CLI tool for one-click preview/deployment of mini-program projects. Aggregates framework builds (Taro/uni-app) with `miniprogram-ci` upload/preview, providing standardized workflows and extensible adapter architecture.
 
-## 新功能特性
+## ✨ Features
 
-✨ **最新更新**：
-- 🚀 **交互式初始化**：`nexus init` 命令自动检测项目并生成配置
-- 🔄 **Git 信息集成**：自动使用 commit message 作为描述，package.json 版本作为版本号
-- 📊 **结构化输出**：支持 `--json` 参数输出 JSON 格式结果，适配 CI/CD 流程
-- 🛡️ **增强错误处理**：智能错误分类、重试机制和详细的解决建议
-- 🎯 **终端二维码**：直接在命令行显示预览二维码，无需额外工具
+**Latest Updates**:
+- 🚀 **Interactive Initialization**: `nexus init` command auto-detects projects and generates configuration
+- 🔄 **Git Integration**: Automatically uses commit messages as descriptions, package.json version as version number
+- 📊 **Structured Output**: Supports `--json` parameter for JSON format results, suitable for CI/CD workflows
+- 🛡️ **Enhanced Error Handling**: Smart error categorization, retry mechanisms, and detailed solution suggestions
+- 🎯 **Terminal QR Codes**: Display preview QR codes directly in command line without additional tools
+- 🔌 **Plugin Architecture**: Supports extensible framework and platform adapters
+- 🌐 **Multi-platform Support**: Supports WeChat, Alipay, ByteDance, QQ mini-programs
 
-## 快速开始
+## 🚀 Quick Start
 
-1) 安装（占位，发布后替换为 npm 包名）
+### 1. Installation
 
 ```bash
-# 全局安装（待发布）
+# Global installation (available after release)
 npm i -g mp-nexus-cli
 
-# 本地开发（仓库克隆后）
-# 选择你使用的包管理器
-npm i
+# Local development (after cloning repository)
+git clone https://github.com/your-org/mp-nexus-cli.git
+cd mp-nexus-cli
+npm install
 npm run build
 ```
 
-2) 在你的小程序项目根目录新增 `mp-nexus.config.js`：
+### 2. Initialize Configuration
 
-```ts
+Run in your mini-program project root directory:
+
+```bash
+nexus init
+```
+
+This will interactively create a `mp-nexus.config.js` configuration file.
+
+Or manually create the configuration file:
+
+```javascript
 // mp-nexus.config.js
 module.exports = {
-  projectType: 'taro',        // 或 'uni-app'，可省略由 CLI 自动识别
-  platform: 'weapp',          // 目标平台：weapp/alipay/...
-  appId: 'wx1234567890abcd',  // 替换为你的真实 AppID
+  projectType: 'taro',        // or 'uni-app', can be omitted for auto-detection
+  platform: 'weapp',          // target platform: weapp/alipay/tt/qq
+  appId: 'wx1234567890abcd',  // replace with your real AppID
   privateKeyPath: './private.key',
   projectPath: '.',
   outputDir: 'dist/weapp',
-  ciOptions: {}
+  ciOptions: {
+    // advanced options passed to miniprogram-ci
+  },
+  notify: {
+    webhook: '' // optional: webhook for Feishu/DingTalk/WeChatWork notifications
+  }
 }
 ```
 
-3) 常用命令
+### 3. Common Commands
 
 ```bash
-# 初始化配置：交互式创建配置文件
-nexus init
-
-# 预览：编译 + 生成二维码（终端渲染）
+# Preview: build + generate QR code (terminal rendering)
 nexus preview --mode dev --desc "test preview"
 
-# 部署：编译 + 上传为新版本
+# Deploy: build + upload as new version
 nexus deploy --mode prod --desc "release: v1.2.3" --ver 1.2.3
 
-# 通用参数
-# --mode <env>   指定 .env 文件模式（如 production）
-# --desc <text>  版本描述；若未提供，自动读取最近一次 Git 提交
-# --ver <x.y.z>  版本号；若未提供，读取 package.json version
-# --dry-run      仅打印将要执行的步骤，不真正上传/预览
-# --verbose      输出更详细的过程日志
-# --json         输出结构化 JSON 格式结果（适用于 CI/CD）
+# View help
+nexus --help
+nexus preview --help
 ```
 
-## 文档索引
+## 📖 Command Reference
 
-- Overview：`docs/overview.md`
-- Architecture：`docs/architecture.md`
-- Development Plan：`docs/development-plan.md`
-- CLI Reference：`docs/cli-reference.md`
-- Config Reference：`docs/config-reference.md`
-- Adapters Guide：`docs/adapters-guide.md`
-- Notifiers Guide：`docs/notifiers-guide.md`
-- Testing：`docs/testing.md`
-- Troubleshooting：`docs/troubleshooting.md`
+### `nexus init`
 
-## 示例项目（examples）
+Initialize configuration file interactively.
 
-仓库内提供最小骨架，便于验证 CLI 行为与参数传递：
+**Options**:
+- `--force`: Force overwrite existing configuration file
 
-- `examples/taro/`：Taro 项目骨架与 `mp-nexus.config.js` 示例（产物目录默认 `dist/weapp`）
-- `examples/uni/`：uni-app 项目骨架与 `mp-nexus.config.js` 示例
+**Features**:
+- Auto-detect framework type (Taro/uni-app)
+- Multi-platform support (WeChat, Alipay, ByteDance, QQ)
+- Optional .env file generation for sensitive data
+- Auto-update .gitignore
 
-使用方式：
+### `nexus preview`
 
-1) 将你的真实小程序 `appId` 与私钥路径写入对应 `mp-nexus.config.js`
-2) 在各自示例目录内执行命令（或在你的真实项目中使用）
+Build project and generate preview QR code.
+
+**Options**:
+- `--mode <env>`: Load `.env.<env>` file and set `NODE_ENV`
+- `--desc <text>`: Version description (auto-fallback to latest Git commit message)
+- `--ver <x.y.z>`: Version number (auto-fallback to `package.json` version)
+- `--config <path>`: Custom configuration file path
+- `--dry-run`: Print planned steps without calling platform CI
+- `--verbose`: Output detailed logs and debug information
+- `--json`: Output structured JSON format results
+
+### `nexus deploy`
+
+Build project and upload as new version.
+
+**Options**: Same as `preview` command
+
+## 🔧 Configuration Reference
+
+### Configuration File Structure
+
+```typescript
+interface NexusConfig {
+  projectType?: 'taro' | 'uni-app';     // project type, auto-detectable
+  platform?: 'weapp' | 'alipay' | 'tt' | 'qq'; // target platform
+  appId: string;                        // mini-program AppID
+  privateKeyPath: string;               // private key file path
+  projectPath?: string;                 // project root directory
+  outputDir?: string;                   // build output directory
+  ciOptions?: Record<string, unknown>;  // platform CI options
+  notify?: {                           // notification configuration
+    webhook?: string;
+  };
+}
+```
+
+### Configuration Priority
+
+1. CLI options (highest priority)
+2. Environment variables from `.env.<mode>` files
+3. Environment variables from `.env` file
+4. Configuration file values
+5. Default values (lowest priority)
+
+### Environment Variable Support
+
+```bash
+# .env.production
+MP_APP_ID=wx1234567890abcd
+MP_PRIVATE_KEY_PATH=./private.key
+NODE_ENV=production
+```
+
+## 🎯 Usage Examples
+
+### Basic Usage
+
+```bash
+# Initialize configuration
+nexus init
+
+# Preview with auto-detected settings
+nexus preview
+
+# Deploy specific version
+nexus deploy --ver 1.2.3 --desc "Release version 1.2.3"
+```
+
+### Advanced Usage
+
+```bash
+# Preview with environment mode
+nexus preview --mode development --verbose
+
+# Deploy with JSON output (for CI/CD)
+nexus deploy --json --mode production
+
+# Dry run to check configuration
+nexus preview --dry-run --verbose
+```
+
+### CI/CD Integration
+
+```bash
+# GitHub Actions example
+nexus deploy --json --mode production --desc "$GITHUB_SHA" > deploy-result.json
+```
+
+## 🔍 Output Formats
+
+### Human-readable Format (Default)
+
+```
+🎉 Preview completed successfully!
+📦 Framework: taro
+🎯 Platform: weapp
+🏷️  Version: 1.0.0
+📝 Description: feat: add new feature
+📱 QR code saved: ./preview-qrcode.png
+```
+
+### JSON Format (`--json`)
+
+```json
+{
+  "success": true,
+  "timestamp": "2025-01-01T00:00:00.000Z",
+  "operation": "preview",
+  "data": {
+    "success": true,
+    "qrcodeImagePath": "./preview-qrcode.png"
+  },
+  "metadata": {
+    "framework": "taro",
+    "platform": "weapp",
+    "version": "1.0.0",
+    "description": "feat: add new feature"
+  }
+}
+```
+
+## 🏗️ Architecture Design
+
+### Overall Architecture
+
+mp-nexus-cli uses layered architecture with adapter pattern for multi-framework and multi-platform support:
+
+```
+CLI Command Layer
+    ↓
+Orchestrator
+    ↓
+Framework Adapters (Taro/uni-app) ← → Platform Adapters (weapp/alipay/...)
+    ↓
+Build Output → miniprogram-ci / Platform CI
+```
+
+### Core Components
+
+- **CLI Layer**: Command parsing and parameter validation
+- **Orchestrator**: Coordinates detection → config loading → build → preview/upload → result output
+- **Framework Adapters**: Handle detection and compilation of different framework projects
+- **Platform Adapters**: Handle calls to corresponding platform CI interfaces
+- **Integration Services**: Config loading, Git information, notifications, logging
+
+## 📁 Example Projects
+
+Repository includes minimal skeletons for CLI behavior verification:
+
+- `examples/taro/`: Taro project skeleton with configuration examples
+- `examples/uni/`: uni-app project skeleton with configuration examples
+
+Usage:
 
 ```bash
 cd examples/taro
-nexus preview --mode dev --desc "examples taro preview"
+nexus preview --mode dev --desc "Taro example preview"
 
 cd ../uni
-nexus deploy --mode prod --desc "examples uni deploy" --ver 0.1.0
+nexus deploy --mode prod --desc "uni-app example deployment" --ver 0.1.0
 ```
 
-> 注意：示例目录仅为占位骨架，未内置完整 Taro/uni 依赖与代码。请在真实项目中验证，或自行补齐示例依赖。
+> Note: Example directories are placeholder skeletons, please verify in real projects.
 
-## 参考
+## 🔧 Troubleshooting
 
-- 微信小程序 CI 文档：`https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html`
-- Taro CLI：`https://docs.taro.zone/docs/cli`
-- uni-app CLI：`https://uniapp.dcloud.net.cn/worktile/CLI.html`
+### Build Failures (Taro/uni-app)
 
-## 故障诊断 / 常见问题（FAQ）
+- Confirm local framework build commands work independently
+- Use `--verbose` for detailed logs
+- Check Node.js version and dependency installation
+- On Windows, be aware of path and shell differences
 
-- 构建失败（Taro/uni）：
-  - 确认本地可单独成功执行框架构建命令（Taro/uni CLI）。
-  - 使用 `--verbose` 获取详细日志；检查 Node 版本与依赖安装情况。
-  - Windows 下注意路径与 shell 差异，尽量避免中文或空格路径。
+### CI Call Failures (miniprogram-ci)
 
-- CI 调用失败（miniprogram-ci）：
-  - 检查 `appId` 与 `privateKeyPath` 是否正确；私钥不得入库泄露。
-  - 确认 `outputDir` 指向正确的小程序产物目录。
-  - 升级/匹配 `miniprogram-ci` 版本，避免与开发者工具版本强绑定的兼容问题。
+- Check if `appId` and `privateKeyPath` are correct
+- Confirm `outputDir` points to correct mini-program build output
+- Upgrade/match `miniprogram-ci` version
 
-- 预览二维码不显示：
-  - 确认终端支持 ASCII 渲染；或落地到文件查看。
-  - 使用 `--verbose` 查看二维码生成路径与错误详情。
+### Preview QR Code Not Displaying
 
-- Git 信息未自动注入：
-  - 确认仓库存在有效的 commit；或手动传入 `--desc`、`--ver`。
+- Confirm terminal supports ASCII rendering
+- Use `--verbose` to see QR code generation path and error details
 
-## GitHub Actions CI 示例
+### Git Information Not Auto-injected
 
-在项目仓库中新增 `.github/workflows/preview.yml`：
+- Confirm repository has valid commits
+- Or manually pass `--desc`, `--ver` parameters
+
+## 🚀 GitHub Actions CI Example
+
+Add `.github/workflows/preview.yml` to your project repository:
 
 ```yaml
 name: MiniProgram Preview
@@ -148,8 +306,54 @@ jobs:
           MP_PRIVATE_KEY: ${{ secrets.MP_PRIVATE_KEY }}
         run: |
           echo "$MP_PRIVATE_KEY" > private.key
-          npx mp-nexus-cli preview --mode dev --desc "CI preview for $GITHUB_SHA"
-
+          npx mp-nexus-cli preview --mode dev --desc "CI preview $GITHUB_SHA"
 ```
 
-> 提示：将 `MP_APP_ID` 与 `MP_PRIVATE_KEY` 存入仓库 Secrets；`mp-nexus.config.js` 中读取 `.env` 或环境变量以避免硬编码。
+> Tip: Store `MP_APP_ID` and `MP_PRIVATE_KEY` in repository Secrets.
+
+## 📚 Documentation Index
+
+- [Overview](docs/overview.md) - Project feature list and multi-dimensional analysis
+- [Architecture](docs/architecture.md) - Detailed architecture design documentation
+- [Development Plan](docs/development-plan.md) - Project development roadmap
+- [CLI Reference](docs/cli-reference.md) - Detailed command line interface documentation
+- [Configuration Reference](docs/config-reference.md) - Detailed configuration options
+- [Adapters Guide](docs/adapters-guide.md) - Framework and platform adapter development guide
+- [Notifiers Guide](docs/notifiers-guide.md) - Notification feature configuration and extension
+- [Testing](docs/testing.md) - Testing strategies and test cases
+- [Troubleshooting](docs/troubleshooting.md) - Common problem solutions
+
+## 🔗 Reference Links
+
+- [WeChat Mini Program CI Documentation](https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html)
+- [Taro CLI Documentation](https://docs.taro.zone/docs/cli)
+- [uni-app CLI Documentation](https://uniapp.dcloud.net.cn/worktile/CLI.html)
+
+## 🤝 Contributing
+
+Welcome to submit Issues and Pull Requests!
+
+## 📄 License
+
+[MIT License](LICENSE)
+
+---
+
+## Exit Codes
+
+- `0`: Success
+- `1`: Unknown error
+- `2`: Invalid arguments
+- `3-4`: Configuration errors
+- `20-22`: File system errors
+- `40-42`: Network/API errors
+- `60-62`: Build errors
+- `80-82`: Deployment errors
+- `100-102`: Platform-specific errors (WeApp)
+
+## Auto-detection Features
+
+- **Framework Detection**: Automatically detects Taro or uni-app projects
+- **Git Integration**: Uses latest commit message as default description
+- **Version Detection**: Uses package.json version as default version number
+- **Output Path**: Automatically determines build output directory
