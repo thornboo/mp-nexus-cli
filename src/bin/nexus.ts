@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import dotenv from 'dotenv';
 import { runPreview, runDeploy } from '../core/orchestrator';
+import { runInit } from '../commands/init';
 import { ExitCodes } from '../utils/exit-codes';
 import { handleError } from '../utils/errors';
 import { createLogger } from '../utils/logger';
@@ -95,6 +96,25 @@ collectCommonOptions(
       }
     })
 );
+
+program
+  .command('init')
+  .description('Initialize configuration file interactively')
+  .option('--force', 'Overwrite existing configuration file')
+  .action(async (options) => {
+    try {
+      const logger = createLogger(false); // Init command doesn't need verbose by default
+      await runInit({
+        logger,
+        force: !!options.force,
+        cwd: process.cwd(),
+      });
+      process.exit(ExitCodes.SUCCESS);
+    } catch (err) {
+      const exitCode = handleError(err, console);
+      process.exit(exitCode);
+    }
+  });
 
 program.parseAsync(process.argv);
 
