@@ -23,15 +23,15 @@ export async function getGitInfo(
 			const log = await git.log({ maxCount: 1 });
 			if (log.latest) {
 				result.latestCommitMessage = log.latest.message;
-				logger.debug(
+				logger.debug?.(
 					`[git] Latest commit message: ${result.latestCommitMessage}`
 				);
 			}
 		} else {
-			logger.debug('[git] Not a git repository');
+			logger.debug?.('[git] Not a git repository');
 		}
 	} catch (error) {
-		logger.debug('[git] Failed to get commit message', {
+		logger.debug?.('[git] Failed to get commit message', {
 			error: error instanceof Error ? error.message : String(error),
 		});
 	}
@@ -44,10 +44,10 @@ export async function getGitInfo(
 
 		if (packageJson.version) {
 			result.packageVersion = packageJson.version;
-			logger.debug(`[git] Package version: ${result.packageVersion}`);
+			logger.debug?.(`[git] Package version: ${result.packageVersion}`);
 		}
 	} catch (error) {
-		logger.debug('[git] Failed to read package.json version', {
+		logger.debug?.('[git] Failed to read package.json version', {
 			error: error instanceof Error ? error.message : String(error),
 		});
 	}

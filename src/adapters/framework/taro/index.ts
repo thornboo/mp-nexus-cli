@@ -67,7 +67,7 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
 						env,
 					];
 
-					options.logger.debug(
+					options.logger.debug?.(
 						`[taro] Executing command: taro ${args.join(' ')}`
 					);
 
@@ -126,12 +126,12 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
 			}
 
 			const candidate = path.resolve(options.cwd, outputDir);
-			options.logger.debug(`[taro] 产物目录: ${candidate}`);
+			options.logger.debug?.(`[taro] 产物目录: ${candidate}`);
 			return candidate;
 		} catch {
 			// 回退到默认路径
 			const candidate = path.resolve(options.cwd, 'dist', 'weapp');
-			options.logger.debug(`[taro] 使用默认产物目录: ${candidate}`);
+			options.logger.debug?.(`[taro] 使用默认产物目录: ${candidate}`);
 			return candidate;
 		}
 	}

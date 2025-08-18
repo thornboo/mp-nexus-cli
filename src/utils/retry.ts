@@ -30,7 +30,7 @@ export class RetryableOperation {
 
 		for (let attempt = 1; attempt <= this.options.maxAttempts; attempt++) {
 			try {
-				this.options.logger.debug(
+				this.options.logger.debug?.(
 					`[retry] Executing ${operationName}, attempt ${attempt}/${this.options.maxAttempts}`
 				);
 				const result = await operation();
@@ -53,7 +53,7 @@ export class RetryableOperation {
 				}
 
 				if (!this.options.retryCondition(error)) {
-					this.options.logger.debug(
+					this.options.logger.debug?.(
 						`[retry] ${operationName} failed with non-retryable error`
 					);
 					break;

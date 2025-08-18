@@ -52,7 +52,7 @@ export class WeappPlatformAdapter implements PlatformAdapter {
 							es6: true,
 							minify: true,
 							codeProtect: true,
-							...options.ciOptions?.setting,
+							...(options.ciOptions?.setting || {}),
 						},
 						...options.ciOptions,
 					});
@@ -72,7 +72,7 @@ export class WeappPlatformAdapter implements PlatformAdapter {
 							es6: true,
 							minify: true,
 							codeProtect: true,
-							...options.ciOptions?.setting,
+							...(options.ciOptions?.setting || {}),
 						},
 						...options.ciOptions,
 					});
@@ -172,7 +172,7 @@ export class WeappPlatformAdapter implements PlatformAdapter {
 							es6: true,
 							minify: true,
 							codeProtect: true,
-							...options.ciOptions?.setting,
+							...(options.ciOptions?.setting || {}),
 						},
 						...options.ciOptions,
 					});
@@ -182,13 +182,13 @@ export class WeappPlatformAdapter implements PlatformAdapter {
 			);
 
 			options.logger.info('[weapp] Upload completed successfully', {
-				version: uploadResult.version,
 				subPackageInfo: uploadResult.subPackageInfo,
+				pluginInfo: uploadResult.pluginInfo,
 			});
 
 			return {
 				success: true,
-				version: uploadResult.version,
+				version: options.version || '1.0.0',
 				raw: uploadResult,
 			};
 		} catch (error) {

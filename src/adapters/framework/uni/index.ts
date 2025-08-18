@@ -79,7 +79,7 @@ export class UniAppFrameworkAdapter implements FrameworkAdapter {
 				}
 			}
 
-			options.logger.debug(
+			options.logger.debug?.(
 				`[uni-app] 执行命令: ${buildCommand} ${buildArgs.join(' ')}`
 			);
 
@@ -163,7 +163,7 @@ export class UniAppFrameworkAdapter implements FrameworkAdapter {
 			}
 
 			const candidate = path.resolve(options.cwd, outputDir);
-			options.logger.debug(`[uni-app] 产物目录: ${candidate}`);
+			options.logger.debug?.(`[uni-app] 产物目录: ${candidate}`);
 			return candidate;
 		} catch {
 			// 回退到默认路径
@@ -173,7 +173,7 @@ export class UniAppFrameworkAdapter implements FrameworkAdapter {
 				'build',
 				'mp-weixin'
 			);
-			options.logger.debug(`[uni-app] 使用默认产物目录: ${candidate}`);
+			options.logger.debug?.(`[uni-app] 使用默认产物目录: ${candidate}`);
 			return candidate;
 		}
 	}

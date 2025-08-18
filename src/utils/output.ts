@@ -128,7 +128,7 @@ export class OutputFormatter {
 
 		// Verbose details
 		if (options.verbose && result && typeof result === 'object') {
-			this.logger.debug('\n📋 详细信息:', result);
+			this.logger.debug?.('\n📋 详细信息:', result);
 		}
 	}
 
