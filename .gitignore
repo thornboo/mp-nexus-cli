@@ -116,3 +116,4 @@ coverage/
 *.njsproj
 *.sln
 *.sw?
+.cursor
