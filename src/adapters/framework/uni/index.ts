@@ -2,6 +2,8 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { execa } from 'execa';
 import type { BuildOptions, FrameworkAdapter } from '../../../types/adapters';
+import { Errors } from '../../../utils/errors';
+import { withRetry, RetryPresets } from '../../../utils/retry';
 
 async function readJsonSafe(filePath: string): Promise<any | undefined> {
 	try {
@@ -17,165 +19,357 @@ export class UniAppFrameworkAdapter implements FrameworkAdapter {
 
 	async detect(cwd: string): Promise<boolean> {
 		const pkg = await readJsonSafe(path.resolve(cwd, 'package.json'));
+		if (!pkg) return false;
+		
 		const deps = {
 			...(pkg?.dependencies || {}),
 			...(pkg?.devDependencies || {}),
 		} as Record<string, string>;
 
-		return Boolean(
+		// Check for uni-app dependencies
+		const hasUniDeps = Boolean(
 			deps['@dcloudio/uni-app'] ||
-				deps['@dcloudio/vue-cli-plugin-uni'] ||
-				deps['@dcloudio/webpack-uni-pages-loader'] ||
-				pkg?.uniApp
+			deps['@dcloudio/vue-cli-plugin-uni'] ||
+			deps['@dcloudio/webpack-uni-pages-loader'] ||
+			deps['@dcloudio/uni-cli-shared'] ||
+			deps['@dcloudio/vite-plugin-uni']
 		);
+
+		// Check for uni-app configuration
+		const hasUniConfig = Boolean(pkg?.uniApp);
+
+		// Check for uni-app specific files
+		const manifestPath = path.resolve(cwd, 'src/manifest.json');
+		const pagesPath = path.resolve(cwd, 'src/pages.json');
+		let hasUniFiles = false;
+		
+		try {
+			await fs.access(manifestPath);
+			await fs.access(pagesPath);
+			hasUniFiles = true;
+		} catch {
+			// Files don't exist
+		}
+
+		return hasUniDeps || hasUniConfig || hasUniFiles;
 	}
 
 	async build(options: BuildOptions): Promise<void> {
 		const skip = options.env?.NEXUS_SKIP_BUILD === '1';
 		if (skip) {
-			options.logger.info('[uni-app] 跳过构建（NEXUS_SKIP_BUILD=1）');
+			options.logger.info('[uni-app] Skip build (NEXUS_SKIP_BUILD=1)');
 			return;
 		}
 
-		options.logger.info('[uni-app] 开始构建...');
+		options.logger.info('[uni-app] Starting build...');
 
 		try {
-			// 检测构建命令
+			// Detect build command strategy
 			const pkg = await readJsonSafe(
 				path.resolve(options.cwd, 'package.json')
 			);
-			const hasUniBuild =
-				pkg?.scripts?.['build:mp-weixin'] ||
-				pkg?.scripts?.['build:weapp'];
 
-			let buildCommand: string;
-			let buildArgs: string[];
-
-			if (hasUniBuild) {
-				buildCommand = 'npm';
-				buildArgs = [
-					'run',
-					pkg?.scripts?.['build:mp-weixin']
-						? 'build:mp-weixin'
-						: 'build:weapp',
-				];
-			} else {
-				// 使用uni CLI
-				try {
-					await execa('uni', ['--version'], { cwd: options.cwd });
-					buildCommand = 'uni';
-					buildArgs = ['build', '--platform', 'mp-weixin'];
-				} catch {
-					// 使用HBuilderX CLI
-					try {
-						await execa('cli', ['--version'], { cwd: options.cwd });
-						buildCommand = 'cli';
-						buildArgs = ['build', '--platform', 'mp-weixin'];
-					} catch {
-						throw new Error(
-							'未检测到 uni-app 构建工具，请确保安装了 HBuilderX CLI 或配置了构建脚本'
-						);
-					}
-				}
-			}
-
-			options.logger.debug?.(
-				`[uni-app] 执行命令: ${buildCommand} ${buildArgs.join(' ')}`
+			const buildStrategy = await this.detectBuildStrategy(options.cwd, pkg);
+			
+			// Execute build with retry mechanism
+			await withRetry(
+				async () => {
+					await this.executeBuild(buildStrategy, options);
+				},
+				{ ...RetryPresets.build, logger: options.logger },
+				'uni-app build'
 			);
 
-			const result = await execa(buildCommand, buildArgs, {
-				cwd: options.cwd,
-				stdio: options.logger.debug ? 'inherit' : 'pipe',
-				env: {
-					...process.env,
-					...options.env,
-					NODE_ENV: options.mode || 'production',
-				},
-			});
-
-			if (result.exitCode !== 0) {
-				throw new Error(
-					`uni-app构建失败 (exit code: ${result.exitCode})`
-				);
-			}
-
-			options.logger.info('[uni-app] 构建完成');
+			options.logger.info('[uni-app] Build completed successfully');
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			options.logger.error('[uni-app] 构建失败', { error: errorMessage });
-
-			// Provide helpful error suggestions
-			if (
-				errorMessage.includes('uni-app') ||
-				errorMessage.includes('cli')
-			) {
-				options.logger.error(
-					'[uni-app] 提示: 请确保已安装 uni-app CLI 或配置了构建脚本'
-				);
-			} else if (errorMessage.includes('vue.config')) {
-				options.logger.error(
-					'[uni-app] 提示: 请检查 vue.config.js 配置'
-				);
-			} else if (errorMessage.includes('dependencies')) {
-				options.logger.error(
-					'[uni-app] 提示: 请检查项目依赖是否已正确安装'
-				);
-			} else if (errorMessage.includes('HBuilderX')) {
-				options.logger.error(
-					'[uni-app] 提示: 如使用 HBuilderX，请确保已正确配置 CLI 工具'
-				);
+			if (error instanceof Error) {
+				// Re-throw as properly classified error
+				if (
+					error.message.includes('command not found') ||
+					error.message.includes('not recognized')
+				) {
+					throw Errors.buildToolNotFound('uni-app CLI');
+				} else if (error.message.includes('dependencies')) {
+					throw Errors.buildFailed('uni-app', {
+						originalError: error.message,
+						suggestion: 'Run `npm install` to install dependencies',
+					});
+				} else if (error.message.includes('vue.config')) {
+					throw Errors.buildFailed('uni-app', {
+						originalError: error.message,
+						suggestion: 'Check vue.config.js configuration',
+					});
+				}
 			}
 
 			throw error;
 		}
 	}
 
-	async getOutputPath(options: BuildOptions): Promise<string> {
-		let outputDir = 'dist/build/mp-weixin';
+	private async detectBuildStrategy(cwd: string, pkg: any): Promise<{
+		command: string;
+		args: string[];
+		description: string;
+	}> {
+		// Strategy 1: Check for npm scripts
+		const commonScripts = [
+			'build:mp-weixin',
+			'build:weapp', 
+			'build:mp',
+			'uni:build:mp-weixin'
+		];
 
+		for (const script of commonScripts) {
+			if (pkg?.scripts?.[script]) {
+				return {
+					command: 'npm',
+					args: ['run', script],
+					description: `npm run ${script}`
+				};
+			}
+		}
+
+		// Strategy 2: Try uni CLI
 		try {
-			// 1. 优先检查vue.config.js配置
-			const vueConfigPath = path.resolve(options.cwd, 'vue.config.js');
-			try {
-				const vueConfig = await import(vueConfigPath);
-				if (vueConfig?.default?.pluginOptions?.['uni-app']?.outputDir) {
-					outputDir =
-						vueConfig.default.pluginOptions['uni-app'].outputDir;
-				} else if (vueConfig?.pluginOptions?.['uni-app']?.outputDir) {
-					outputDir = vueConfig.pluginOptions['uni-app'].outputDir;
-				}
-			} catch {
-				// 继续尝试其他方式
-			}
-
-			// 2. 检查package.json中的uni-app配置
-			const pkg = await readJsonSafe(
-				path.resolve(options.cwd, 'package.json')
+			await withRetry(
+				async () => {
+					const result = await execa('uni', ['--version'], { cwd });
+					if (result.exitCode !== 0) {
+						throw Errors.buildToolNotFound('uni CLI');
+					}
+				},
+				{ ...RetryPresets.quick },
+				'uni CLI detection'
 			);
-			if (pkg?.uniApp?.outputDir) {
-				outputDir = pkg.uniApp.outputDir;
-			}
 
-			// 3. 基于mode设置输出目录
-			if (options.mode === 'development') {
-				outputDir = outputDir.replace('/build/', '/dev/');
-			}
-
-			const candidate = path.resolve(options.cwd, outputDir);
-			options.logger.debug?.(`[uni-app] 产物目录: ${candidate}`);
-			return candidate;
+			return {
+				command: 'uni',
+				args: ['build', '--platform', 'mp-weixin'],
+				description: 'uni build --platform mp-weixin'
+			};
 		} catch {
-			// 回退到默认路径
-			const candidate = path.resolve(
-				options.cwd,
-				'dist',
-				'build',
-				'mp-weixin'
+			// Continue to next strategy
+		}
+
+		// Strategy 3: Try Vue CLI with uni plugin
+		try {
+			await withRetry(
+				async () => {
+					const result = await execa('vue-cli-service', ['--version'], { cwd });
+					if (result.exitCode !== 0) {
+						throw Errors.buildToolNotFound('Vue CLI');
+					}
+				},
+				{ ...RetryPresets.quick },
+				'Vue CLI detection'
 			);
-			options.logger.debug?.(`[uni-app] 使用默认产物目录: ${candidate}`);
+
+			return {
+				command: 'vue-cli-service',
+				args: ['uni-build', '--mode', 'production', '--platform', 'mp-weixin'],
+				description: 'vue-cli-service uni-build --platform mp-weixin'
+			};
+		} catch {
+			// Continue to next strategy
+		}
+
+		// Strategy 4: Try HBuilderX CLI
+		try {
+			await withRetry(
+				async () => {
+					const result = await execa('cli', ['--version'], { cwd });
+					if (result.exitCode !== 0) {
+						throw Errors.buildToolNotFound('HBuilderX CLI');
+					}
+				},
+				{ ...RetryPresets.quick },
+				'HBuilderX CLI detection'
+			);
+
+			return {
+				command: 'cli',
+				args: ['build', '--platform', 'mp-weixin'],
+				description: 'cli build --platform mp-weixin'
+			};
+		} catch {
+			// All strategies failed
+		}
+
+		throw Errors.buildToolNotFound(
+			'uni-app build tool (tried npm scripts, uni CLI, Vue CLI, HBuilderX CLI)'
+		);
+	}
+
+	private async executeBuild(
+		strategy: { command: string; args: string[]; description: string },
+		options: BuildOptions
+	): Promise<void> {
+		options.logger.debug?.(
+			`[uni-app] Executing command: ${strategy.description}`
+		);
+
+		const result = await execa(strategy.command, strategy.args, {
+			cwd: options.cwd,
+			stdio: options.logger.debug ? 'inherit' : 'pipe',
+			env: {
+				...process.env,
+				...options.env,
+				NODE_ENV: options.mode || 'production',
+			},
+		});
+
+		if (result.exitCode !== 0) {
+			throw Errors.buildFailed('uni-app', {
+				exitCode: result.exitCode,
+				stderr: result.stderr,
+			});
+		}
+	}
+
+	async getOutputPath(options: BuildOptions): Promise<string> {
+		try {
+			// Priority 1: Check vue.config.js configuration
+			const outputFromVueConfig = await this.getOutputFromVueConfig(options.cwd);
+			if (outputFromVueConfig) {
+				const candidate = path.resolve(options.cwd, outputFromVueConfig);
+				options.logger.debug?.(`[uni-app] Output directory from vue.config.js: ${candidate}`);
+				return candidate;
+			}
+
+			// Priority 2: Check package.json uni-app configuration
+			const outputFromPackageJson = await this.getOutputFromPackageJson(options.cwd);
+			if (outputFromPackageJson) {
+				const candidate = path.resolve(options.cwd, outputFromPackageJson);
+				options.logger.debug?.(`[uni-app] Output directory from package.json: ${candidate}`);
+				return candidate;
+			}
+
+			// Priority 3: Check manifest.json for project configuration
+			const outputFromManifest = await this.getOutputFromManifest(options.cwd);
+			if (outputFromManifest) {
+				const candidate = path.resolve(options.cwd, outputFromManifest);
+				options.logger.debug?.(`[uni-app] Output directory from manifest: ${candidate}`);
+				return candidate;
+			}
+
+			// Priority 4: Use conventional paths based on detected build strategy
+			const conventionalPath = this.getConventionalOutputPath(options.mode);
+			const candidate = path.resolve(options.cwd, conventionalPath);
+			options.logger.debug?.(`[uni-app] Using conventional output directory: ${candidate}`);
+			return candidate;
+
+		} catch (error) {
+			// Fallback to default path
+			const defaultPath = 'dist/build/mp-weixin';
+			const candidate = path.resolve(options.cwd, defaultPath);
+			options.logger.debug?.(`[uni-app] Using fallback output directory: ${candidate}`);
 			return candidate;
 		}
+	}
+
+	private async getOutputFromVueConfig(cwd: string): Promise<string | null> {
+		const vueConfigPath = path.resolve(cwd, 'vue.config.js');
+		
+		try {
+			// Check if vue.config.js exists
+			await fs.access(vueConfigPath);
+			
+			// Import the config (note: this might not work in all cases due to dynamic imports)
+			try {
+				const vueConfig = await import(vueConfigPath);
+				const config = vueConfig?.default || vueConfig;
+				
+				// Check various possible configuration paths
+				if (config?.pluginOptions?.['uni-app']?.outputDir) {
+					return config.pluginOptions['uni-app'].outputDir;
+				}
+				
+				if (config?.outputDir) {
+					return config.outputDir;
+				}
+				
+				// Check for function-based config
+				if (typeof config === 'function') {
+					const resolvedConfig = config();
+					if (resolvedConfig?.pluginOptions?.['uni-app']?.outputDir) {
+						return resolvedConfig.pluginOptions['uni-app'].outputDir;
+					}
+				}
+			} catch {
+				// If import fails, try reading as text and basic parsing
+				const configContent = await fs.readFile(vueConfigPath, 'utf-8');
+				const outputDirMatch = configContent.match(/outputDir:\s*['"`]([^'"`]+)['"`]/);
+				if (outputDirMatch) {
+					return outputDirMatch[1];
+				}
+			}
+		} catch {
+			// vue.config.js doesn't exist or can't be read
+		}
+		
+		return null;
+	}
+
+	private async getOutputFromPackageJson(cwd: string): Promise<string | null> {
+		const pkg = await readJsonSafe(path.resolve(cwd, 'package.json'));
+		
+		if (pkg?.uniApp?.outputDir) {
+			return pkg.uniApp.outputDir;
+		}
+		
+		// Check for build scripts that might indicate output directory
+		if (pkg?.scripts) {
+			const buildScript = pkg.scripts['build:mp-weixin'] || pkg.scripts['build:weapp'];
+			if (buildScript && typeof buildScript === 'string') {
+				// Try to extract output directory from build script
+				const outputMatch = buildScript.match(/--output[=\s]+([^\s]+)/);
+				if (outputMatch) {
+					return outputMatch[1];
+				}
+			}
+		}
+		
+		return null;
+	}
+
+	private async getOutputFromManifest(cwd: string): Promise<string | null> {
+		try {
+			const manifestPath = path.resolve(cwd, 'src/manifest.json');
+			const manifestContent = await fs.readFile(manifestPath, 'utf-8');
+			const manifest = JSON.parse(manifestContent);
+			
+			// Check for mp-weixin specific configuration
+			if (manifest?.['mp-weixin']?.outputDir) {
+				return manifest['mp-weixin'].outputDir;
+			}
+			
+			// Check for global output configuration
+			if (manifest?.outputDir) {
+				return manifest.outputDir;
+			}
+		} catch {
+			// manifest.json doesn't exist or can't be parsed
+		}
+		
+		return null;
+	}
+
+	private getConventionalOutputPath(mode?: string): string {
+		// Common uni-app output paths based on build mode and tooling
+		const basePaths = [
+			'dist/build/mp-weixin',    // Vue CLI + uni-app plugin
+			'dist/mp-weixin',          // uni CLI
+			'unpackage/dist/build/mp-weixin', // HBuilderX
+			'build/mp-weixin'          // Custom build
+		];
+		
+		// Adjust for development mode
+		if (mode === 'development' || mode === 'dev') {
+			return basePaths[0].replace('/build/', '/dev/');
+		}
+		
+		// Return the most common production path
+		return basePaths[0];
 	}
 }
 

@@ -75,11 +75,59 @@ async build(options: BuildOptions): Promise<void> {
 }
 ```
 
-#### uni-app Adapter ⚠️ **STRUCTURE READY**
+#### uni-app Adapter ✅ **COMPLETED**
 **Location**: `src/adapters/framework/uni/index.ts`
 
-**Status**: Interface implemented, build details need completion
-**Next Steps**: Implement HBuilderX CLI integration and build command execution
+**Features Implemented**:
+- ✅ **Advanced Project Detection**: Checks dependencies, configuration files, and uni-app specific files (manifest.json, pages.json)
+- ✅ **Multiple Build Strategy Support**: npm scripts, uni CLI, Vue CLI, HBuilderX CLI detection and execution
+- ✅ **Comprehensive Output Path Resolution**: Supports vue.config.js, package.json, manifest.json, and conventional paths
+- ✅ **Error Handling**: Comprehensive error classification with actionable suggestions
+- ✅ **Retry Mechanisms**: Network and build operation retries with exponential backoff
+- ✅ **Cross-Platform Compatibility**: Windows/macOS/Linux support
+
+**Build Strategy Detection**:
+1. **npm Scripts**: Automatically detects `build:mp-weixin`, `build:weapp`, `build:mp`, `uni:build:mp-weixin`
+2. **uni CLI**: Direct uni command-line interface support
+3. **Vue CLI**: Vue CLI service with uni-app plugin integration
+4. **HBuilderX CLI**: Support for HBuilderX command-line tools
+
+**Implementation Highlights**:
+```typescript
+// Multi-strategy build detection
+private async detectBuildStrategy(cwd: string, pkg: any): Promise<{
+  command: string; args: string[]; description: string;
+}> {
+  // Try npm scripts first
+  const commonScripts = ['build:mp-weixin', 'build:weapp', 'build:mp'];
+  for (const script of commonScripts) {
+    if (pkg?.scripts?.[script]) {
+      return { command: 'npm', args: ['run', script], description: `npm run ${script}` };
+    }
+  }
+  
+  // Fallback to CLI detection with retry mechanisms
+  // uni CLI -> Vue CLI -> HBuilderX CLI
+}
+
+// Comprehensive output path resolution
+async getOutputPath(options: BuildOptions): Promise<string> {
+  // Priority: vue.config.js > package.json > manifest.json > conventional paths
+}
+```
+
+**Configuration Examples**:
+```javascript
+// package.json
+{
+  "scripts": {
+    "build:mp-weixin": "uni-app build --platform mp-weixin"
+  },
+  "uniApp": {
+    "outputDir": "dist/build/mp-weixin"
+  }
+}
+```
 
 ### Method Descriptions
 

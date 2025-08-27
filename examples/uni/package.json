@@ -1,10 +1,23 @@
 {
   "name": "uni-app-example",
   "version": "1.0.0",
+  "description": "Example uni-app project for mp-nexus-cli testing",
   "dependencies": {
-    "@dcloudio/uni-app": "^3.0.0"
+    "@dcloudio/uni-app": "^3.0.0",
+    "@dcloudio/vue-cli-plugin-uni": "^5.0.0",
+    "vue": "^3.3.0"
+  },
+  "devDependencies": {
+    "@vue/cli-service": "^5.0.0"
   },
   "scripts": {
-    "build:mp-weixin": "uni-app build --platform mp-weixin"
+    "serve": "npm run dev:mp-weixin",
+    "build": "npm run build:mp-weixin",
+    "build:mp-weixin": "uni-app build --platform mp-weixin",
+    "build:weapp": "uni-app build --platform mp-weixin",
+    "dev:mp-weixin": "uni-app dev --platform mp-weixin"
+  },
+  "uniApp": {
+    "outputDir": "dist/build/mp-weixin"
   }
 }
