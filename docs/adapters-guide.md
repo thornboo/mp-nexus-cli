@@ -1,18 +1,30 @@
-# Adapters Guide
+# Adapters Development Guide
 
-mp-nexus-cli uses a plugin architecture with adapter patterns to support different frameworks and platforms. This guide will help you understand how to develop and extend adapters.
+**Implementation Status**: ✅ **FRAMEWORK READY** | ⚠️ **EXPANSION NEEDED**
+
+mp-nexus-cli uses a robust plugin architecture with adapter patterns to support different frameworks and platforms. This guide will help you understand the current implementation and how to develop additional adapters.
 
 ## Architecture Overview
 
-Adapters are divided into two categories:
-- **Framework Adapters**: Handle detection and building of different frontend framework projects (e.g., Taro, uni-app)
-- **Platform Adapters**: Handle interaction with different mini-program platform CI services (e.g., WeChat, Alipay)
+The adapter system is fully implemented and consists of two categories:
+
+### Framework Adapters ✅ **IMPLEMENTED**
+Handle detection and building of different frontend framework projects
+- **Taro Adapter**: ✅ **FULLY IMPLEMENTED** - Complete detection, build, and output path resolution
+- **uni-app Adapter**: ⚠️ **STRUCTURE READY** - Interface implemented, build details pending
+
+### Platform Adapters ⚠️ **PARTIALLY IMPLEMENTED**  
+Handle interaction with different mini-program platform CI services
+- **WeChat (weapp)**: ✅ **FULLY IMPLEMENTED** - Complete miniprogram-ci integration
+- **Alipay**: ❌ **PENDING** - Interface ready, implementation needed
+- **ByteDance (tt)**: ❌ **PENDING** - Interface ready, implementation needed  
+- **QQ**: ❌ **PENDING** - Interface ready, implementation needed
 
 ## Framework Adapters
 
 Framework adapters handle the build logic for specific frontend frameworks.
 
-### Interface Definition
+### Interface Definition ✅ **IMPLEMENTED**
 
 ```typescript
 export interface FrameworkAdapter {
@@ -24,12 +36,50 @@ export interface FrameworkAdapter {
 
 export interface BuildOptions {
   cwd: string;
-  mode?: string; // dev/test/prod
+  mode?: string; // dev/test/prod/development/production
   env?: Record<string, string>;
   logger: Logger;
   platform?: string; // weapp/alipay/tt/qq
 }
 ```
+
+### Current Implementations
+
+#### Taro Adapter ✅ **COMPLETED** 
+**Location**: `src/adapters/framework/taro/index.ts`
+
+**Features Implemented**:
+- ✅ **Project Detection**: Checks for Taro dependencies in package.json (`@tarojs/taro`, `@tarojs/cli`)
+- ✅ **Build Execution**: Integrates with Taro CLI using `execa` for reliable subprocess management
+- ✅ **Output Path Resolution**: Reads Taro config to determine build output directory
+- ✅ **Error Handling**: Comprehensive error classification and retry mechanisms
+- ✅ **Cross-Platform**: Windows/macOS/Linux compatibility
+
+**Implementation Highlights**:
+```typescript
+// Detection logic
+async detect(cwd: string): Promise<boolean> {
+  const pkg = await readJsonSafe(path.resolve(cwd, 'package.json'));
+  const deps = { ...(pkg?.dependencies || {}), ...(pkg?.devDependencies || {}) };
+  return Boolean(deps['@tarojs/taro'] || deps['@tarojs/cli'] || deps['taro']);
+}
+
+// Build execution with retry mechanism
+async build(options: BuildOptions): Promise<void> {
+  await withRetry(async () => {
+    await execa('taro', ['build', '--type', 'weapp', '--env', options.mode || 'development'], {
+      cwd: options.cwd,
+      stdio: options.logger.debug ? 'inherit' : 'pipe',
+    });
+  }, RetryPresets.build, 'Taro build');
+}
+```
+
+#### uni-app Adapter ⚠️ **STRUCTURE READY**
+**Location**: `src/adapters/framework/uni/index.ts`
+
+**Status**: Interface implemented, build details need completion
+**Next Steps**: Implement HBuilderX CLI integration and build command execution
 
 ### Method Descriptions
 
@@ -208,7 +258,58 @@ export class TaroAdapter implements FrameworkAdapter {
 
 Platform adapters handle interaction with mini-program platform CI services.
 
-### Interface Definition
+### Current Implementation Status
+
+#### WeChat Platform Adapter ✅ **FULLY IMPLEMENTED**
+**Location**: `src/adapters/platform/weapp/index.ts`
+
+**Features Implemented**:
+- ✅ **Complete miniprogram-ci Integration**: Real WeChat CI operations
+- ✅ **QR Code Generation**: Dual output (terminal + file) using qrcode-terminal
+- ✅ **Upload Functionality**: Complete deployment capability with version management
+- ✅ **Error Classification**: Intelligent error categorization with actionable suggestions
+- ✅ **Retry Mechanisms**: Network operation retries with exponential backoff
+- ✅ **Security**: Private key validation and secure credential handling
+
+**Implementation Highlights**:
+```typescript
+async preview(options: PreviewOptions): Promise<PreviewResult> {
+  const project = new ci.Project({
+    appid: options.appId,
+    type: 'miniProgram',
+    projectPath: options.projectPath,
+    privateKeyPath: options.privateKeyPath,
+    ignores: ['node_modules/**/*'],
+  });
+
+  // Generate both terminal and file QR codes
+  console.log('\n📱 Preview QR Code:\n');
+  const terminalResult = await ci.preview({
+    project,
+    version: options.version || '1.0.0',
+    desc: options.desc || 'Preview version',
+    qrcodeFormat: 'terminal',
+  });
+
+  const imagePath = options.qrcodeOutputPath || './preview-qrcode.png';
+  const imageResult = await ci.preview({
+    project,
+    qrcodeFormat: 'image',
+    qrcodeOutputDest: imagePath,
+  });
+
+  return { success: true, qrcodeImagePath: imagePath };
+}
+```
+
+#### Other Platform Adapters ❌ **PENDING IMPLEMENTATION**
+
+The interface and architecture are ready for:
+- **Alipay Mini Program**: Interface defined, specific implementation needed
+- **ByteDance (tt) Mini Program**: Interface defined, specific implementation needed  
+- **QQ Mini Program**: Interface defined, specific implementation needed
+
+### Interface Definition ✅ **IMPLEMENTED**
 
 ```typescript
 export interface PlatformAdapter {

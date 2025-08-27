@@ -1,25 +1,112 @@
-# 通知器指南（草稿）
+# Notifiers Guide
 
-## 协议（Contract）
+**Implementation Status**: ⚠️ **INTERFACE READY, PROVIDERS PENDING**
 
-```ts
+## Notifier Interface
+
+The notification system is designed with a pluggable architecture to support multiple providers.
+
+```typescript
 export interface Notifier {
   provider: 'feishu' | 'dingtalk' | 'wechatwork' | 'custom';
   notify(message: NotifierMessage, config: NotifierConfig): Promise<void>;
 }
+
+export interface NotifierMessage {
+  title: string;
+  content: string;
+  operation: 'preview' | 'deploy';
+  status: 'success' | 'failure';
+  metadata?: {
+    framework?: string;
+    platform?: string;
+    version?: string;
+    qrcodeImagePath?: string;
+  };
+}
+
+export interface NotifierConfig {
+  webhook: string;
+  provider: 'feishu' | 'dingtalk' | 'wechatwork' | 'custom';
+  headers?: Record<string, string>;
+}
 ```
 
-## 负载格式（Payloads）
+## Provider Payload Formats
 
-- 飞书：`{ msg_type: 'text', content: { text } }`
-- 钉钉：`{ msgtype: 'text', text: { content } }`
-- 企业微信：`{ msgtype: 'text', text: { content } }`
-- 自定义：原始透传
+### Feishu (飞书)
+```json
+{
+  "msg_type": "text",
+  "content": {
+    "text": "🎉 Preview completed successfully!\n📦 Framework: taro\n🎯 Platform: weapp\n🏷️ Version: 1.0.0"
+  }
+}
+```
 
-## 最佳实践
+### DingTalk (钉钉)
+```json
+{
+  "msgtype": "text",
+  "text": {
+    "content": "🎉 Preview completed successfully!\n📦 Framework: taro\n🎯 Platform: weapp\n🏷️ Version: 1.0.0"
+  }
+}
+```
 
-- 测试期间使用 `mock://...` webhook 以避免外部请求
-- 避免泄露敏感信息；从日志中移除 token/路径
-- 生产实现中加入重试/退避策略
+### WeChatWork (企业微信)
+```json
+{
+  "msgtype": "text",
+  "text": {
+    "content": "🎉 Preview completed successfully!\n📦 Framework: taro\n🎯 Platform: weapp\n🏷️ Version: 1.0.0"
+  }
+}
+```
+
+### Custom
+Raw payload passthrough for custom webhook endpoints.
+
+## Configuration
+
+Add notification configuration to your `mp-nexus.config.js`:
+
+```javascript
+module.exports = {
+  // ... other config
+  notify: {
+    webhook: process.env.FEISHU_WEBHOOK,
+    provider: 'feishu', // 'feishu' | 'dingtalk' | 'wechatwork' | 'custom'
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  },
+};
+```
+
+## Best Practices
+
+### Development & Testing
+- Use `mock://...` webhook URLs during testing to avoid external requests
+- Test notification formatting before production deployment
+- Validate webhook URLs and authentication
+
+### Security
+- Store webhook URLs in environment variables, not in configuration files
+- Remove sensitive information from notification content (tokens, file paths)
+- Use HTTPS webhooks only in production
+
+### Production Implementation
+- Implement retry strategies with exponential backoff
+- Add timeout handling for webhook requests
+- Log notification success/failure for monitoring
+
+## Implementation Status
+
+- ✅ **Interface Design**: Complete notification interface designed
+- ✅ **Configuration Support**: Webhook configuration integrated into config system
+- ❌ **Provider Implementations**: Specific provider integrations pending
+- ✅ **Message Formatting**: Structured message format designed
+- ⚠️ **Error Handling**: Basic error handling in place, provider-specific handling needed
 
 
