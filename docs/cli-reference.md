@@ -1,5 +1,25 @@
 # CLI Reference
 
+## Global Options
+
+### Language Selection
+- `--lang <language>`: Set interface language (`en` | `zh-CN`)
+  - Automatically detects system language if not specified
+  - Affects all command descriptions, prompts, and log messages
+  - Can also be set via `NEXUS_LANG` environment variable
+
+**Examples**:
+```bash
+# Use English interface
+nexus --lang en --help
+
+# Use Chinese interface  
+nexus --lang zh-CN init
+
+# Auto-detect from system (default)
+nexus preview
+```
+
 ## Commands
 
 ### `nexus init`

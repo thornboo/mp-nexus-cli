@@ -9,6 +9,7 @@ A unified CLI tool for one-click preview/deployment of mini-program projects. Ag
 **🎉 Project Status: PRODUCTION READY - All core features fully implemented!**
 
 **Latest Updates**:
+- ✅ **Internationalization (i18n)**: Full English/Chinese interface support with automatic language detection
 - ✅ **Interactive Initialization**: `nexus init` command auto-detects projects and generates configuration
 - ✅ **Git Integration**: Automatically uses commit messages as descriptions, package.json version as version number
 - ✅ **Structured Output**: Supports `--json` parameter for JSON format results, suitable for CI/CD workflows
@@ -30,6 +31,7 @@ A unified CLI tool for one-click preview/deployment of mini-program projects. Ag
 | **Interactive Initialization** | ✅ Complete | 100% |
 | **QR Code Generation** | ✅ Complete | 100% |
 | **uni-app Framework Support** | ✅ Complete | 95% |
+| **Internationalization (i18n)** | ✅ Complete | 100% |
 | **Multi-platform Support** | ⚠️ Partial | 25% |
 | **Notification System** | ⚠️ Partial | 70% |
 
@@ -89,7 +91,13 @@ nexus preview --mode dev --desc "test preview"
 # Deploy: build + upload as new version
 nexus deploy --mode prod --desc "release: v1.2.3" --ver 1.2.3
 
-# View help
+# Language selection: English interface
+nexus --lang en --help
+
+# Language selection: Chinese interface  
+nexus --lang zh-CN init
+
+# View help (auto-detects system language)
 nexus --help
 nexus preview --help
 ```

@@ -14,11 +14,11 @@ This will auto-detect your project framework and guide you through the configura
 
 ## Configuration Priority
 
-1. CLI options (`--mode --desc --ver --config`)
+1. CLI options (`--mode --desc --ver --config --lang`)
 2. Environment variables from `.env.<mode>` (e.g., `.env.production`)
-3. Environment variables from `.env`
+3. Environment variables from `.env` (including `NEXUS_LANG`)
 4. Values in `mp-nexus.config.js`
-5. Default values
+5. Default values (language: auto-detected from system)
 
 ## Configuration Schema
 
@@ -26,6 +26,9 @@ This will auto-detect your project framework and guide you through the configura
 export interface NexusConfig {
   // Project framework type (auto-detected if not specified)
   projectType?: 'taro' | 'uni-app';
+  
+  // Interface language (auto-detected from system if not specified)
+  language?: 'en' | 'zh-CN';
   
   // Target platform
   platform?: 'weapp' | 'alipay' | 'tt' | 'qq';

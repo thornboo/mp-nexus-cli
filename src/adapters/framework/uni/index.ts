@@ -4,6 +4,7 @@ import { execa } from 'execa';
 import type { BuildOptions, FrameworkAdapter } from '../../../types/adapters';
 import { Errors } from '../../../utils/errors';
 import { withRetry, RetryPresets } from '../../../utils/retry';
+import { translate } from '../../../utils/i18n';
 
 async function readJsonSafe(filePath: string): Promise<any | undefined> {
 	try {
@@ -57,11 +58,11 @@ export class UniAppFrameworkAdapter implements FrameworkAdapter {
 	async build(options: BuildOptions): Promise<void> {
 		const skip = options.env?.NEXUS_SKIP_BUILD === '1';
 		if (skip) {
-			options.logger.info('[uni-app] Skip build (NEXUS_SKIP_BUILD=1)');
+			options.logger.info('framework.uniapp.buildSkipped');
 			return;
 		}
 
-		options.logger.info('[uni-app] Starting build...');
+		options.logger.info('framework.uniapp.buildStart');
 
 		try {
 			// Detect build command strategy
@@ -80,7 +81,7 @@ export class UniAppFrameworkAdapter implements FrameworkAdapter {
 				'uni-app build'
 			);
 
-			options.logger.info('[uni-app] Build completed successfully');
+			options.logger.info('framework.uniapp.buildCompleted');
 		} catch (error) {
 			if (error instanceof Error) {
 				// Re-throw as properly classified error

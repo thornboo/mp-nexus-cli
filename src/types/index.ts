@@ -39,6 +39,7 @@ export interface CLIOptions {
 	dryRun?: boolean;
 	verbose?: boolean;
 	json?: boolean;
+	lang?: 'en' | 'zh-CN';
 }
 
 /** Root configuration model loaded from `mp-nexus.config.js`. */
@@ -50,6 +51,7 @@ export interface NexusConfig {
 	projectPath?: string;
 	outputDir?: string;
 	ciOptions?: Record<string, unknown>;
+	language?: 'en' | 'zh-CN';
 	notify?: {
 		webhook?: string;
 		provider?: import('./notifier').NotifierProvider;

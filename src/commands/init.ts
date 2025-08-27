@@ -5,6 +5,7 @@ import type { Logger, NexusConfig } from '../types';
 import { createTaroAdapter } from '../adapters/framework/taro';
 import { createUniAppAdapter } from '../adapters/framework/uni';
 import { Errors } from '../utils/errors';
+import { translate } from '../utils/i18n';
 
 export interface InitOptions {
 	logger: Logger;
@@ -34,13 +35,13 @@ export async function runInit(options: InitOptions): Promise<void> {
 				{
 					type: 'confirm',
 					name: 'overwrite',
-					message: 'Configuration file already exists. Overwrite?',
+					message: translate('cli.commands.init.prompts.overwrite'),
 					default: false,
 				},
 			]);
 
 			if (!overwrite) {
-				logger.info('Init cancelled by user');
+				logger.info('cli.commands.init.messages.cancelled');
 				return;
 			}
 		}
@@ -48,7 +49,7 @@ export async function runInit(options: InitOptions): Promise<void> {
 		// File doesn't exist, continue with init
 	}
 
-	logger.info('🚀 Initializing mp-nexus-cli configuration...\n');
+	logger.info('cli.commands.init.messages.starting');
 
 	// Detect project type automatically
 	const detectedFramework = await detectFramework(cwd, logger);
@@ -96,17 +97,20 @@ async function collectConfiguration(
 	detectedFramework: 'taro' | 'uni-app' | 'unknown',
 	logger: Logger
 ): Promise<InitAnswers> {
-	logger.info('Please provide the following information:\n');
+	logger.info('cli.commands.init.messages.collectingInfo');
 
 	return await inquirer.prompt([
 		{
 			type: 'list',
 			name: 'projectType',
-			message: 'What framework does your project use?',
+			message: translate('cli.commands.init.prompts.framework'),
 			choices: [
-				{ name: 'Taro', value: 'taro' },
-				{ name: 'uni-app', value: 'uni-app' },
-				{ name: 'Other/Manual setup', value: 'other' },
+				{ name: translate('choices.frameworks.taro'), value: 'taro' },
+				{
+					name: translate('choices.frameworks.uniapp'),
+					value: 'uni-app',
+				},
+				{ name: translate('choices.frameworks.other'), value: 'other' },
 			],
 			default:
 				detectedFramework !== 'unknown' ? detectedFramework : 'taro',
@@ -114,25 +118,32 @@ async function collectConfiguration(
 		{
 			type: 'list',
 			name: 'platform',
-			message: 'Which platform do you want to deploy to?',
+			message: translate('cli.commands.init.prompts.platform'),
 			choices: [
-				{ name: 'WeChat Mini Program (weapp)', value: 'weapp' },
-				{ name: 'Alipay Mini Program (alipay)', value: 'alipay' },
-				{ name: 'ByteDance Mini Program (tt)', value: 'tt' },
-				{ name: 'QQ Mini Program (qq)', value: 'qq' },
+				{ name: translate('choices.platforms.weapp'), value: 'weapp' },
+				{
+					name: translate('choices.platforms.alipay'),
+					value: 'alipay',
+				},
+				{ name: translate('choices.platforms.tt'), value: 'tt' },
+				{ name: translate('choices.platforms.qq'), value: 'qq' },
 			],
 			default: 'weapp',
 		},
 		{
 			type: 'input',
 			name: 'appId',
-			message: 'Enter your App ID:',
+			message: translate('cli.commands.init.prompts.appId'),
 			validate: (input: string) => {
 				if (!input.trim()) {
-					return 'App ID is required';
+					return translate(
+						'cli.commands.init.validation.appIdRequired'
+					);
 				}
 				if (input.length < 10) {
-					return 'App ID seems too short. Please verify.';
+					return translate(
+						'cli.commands.init.validation.appIdTooShort'
+					);
 				}
 				return true;
 			},
@@ -140,11 +151,13 @@ async function collectConfiguration(
 		{
 			type: 'input',
 			name: 'privateKeyPath',
-			message: 'Enter the path to your private key file:',
+			message: translate('cli.commands.init.prompts.privateKeyPath'),
 			default: './private.key',
 			validate: (input: string) => {
 				if (!input.trim()) {
-					return 'Private key path is required';
+					return translate(
+						'cli.commands.init.validation.privateKeyRequired'
+					);
 				}
 				return true;
 			},
@@ -152,11 +165,13 @@ async function collectConfiguration(
 		{
 			type: 'input',
 			name: 'projectPath',
-			message: 'Enter your project path:',
+			message: translate('cli.commands.init.prompts.projectPath'),
 			default: '.',
 			validate: (input: string) => {
 				if (!input.trim()) {
-					return 'Project path is required';
+					return translate(
+						'cli.commands.init.validation.projectPathRequired'
+					);
 				}
 				return true;
 			},
@@ -164,7 +179,7 @@ async function collectConfiguration(
 		{
 			type: 'input',
 			name: 'outputDir',
-			message: 'Enter the build output directory:',
+			message: translate('cli.commands.init.prompts.outputDir'),
 			default: (answers: Partial<InitAnswers>) => {
 				switch (answers.projectType) {
 					case 'taro':
@@ -177,7 +192,9 @@ async function collectConfiguration(
 			},
 			validate: (input: string) => {
 				if (!input.trim()) {
-					return 'Output directory is required';
+					return translate(
+						'cli.commands.init.validation.outputDirRequired'
+					);
 				}
 				return true;
 			},
@@ -185,7 +202,7 @@ async function collectConfiguration(
 		{
 			type: 'confirm',
 			name: 'useEnvFile',
-			message: 'Create .env file for sensitive configuration?',
+			message: translate('cli.commands.init.prompts.useEnvFile'),
 			default: true,
 		},
 	]);

@@ -11,7 +11,7 @@
 - **Adapter Layer**:
   - **Framework Adapters** (Taro/uni-app): Handle detection, compilation, and artifact directory resolution
   - **Platform Adapters** (weapp/alipay/tt/qq): Handle platform-specific CI/upload/preview interface calls
-- **Integration Services**: Configuration & environment variable loading, Git information, notifications, logging & error management
+- **Integration Services**: Configuration & environment variable loading, Git information, notifications, logging & error management, internationalization (i18n)
 
 ### Current Implementation Status
 
@@ -19,9 +19,11 @@
 - Complete CLI layer with comprehensive command support
 - Robust orchestrator with error handling and retry mechanisms
 - Taro framework adapter with full build integration
+- uni-app framework adapter with complete build integration (95% complete)
 - WeChat platform adapter with real miniprogram-ci integration
 - Complete configuration system with environment support
 - Git integration for automatic version and description detection
+- Internationalization (i18n) system with English and Chinese support
 
 ```mermaid
 graph TD
@@ -256,6 +258,44 @@ sequenceDiagram
 - `beforeBuild`, `afterBuild`, `beforeUpload`, `afterUpload`
 - Failure interruption strategy with rollback capability
 - Plugin lifecycle management
+
+## Internationalization (i18n) System
+
+**Implementation Status**: ✅ **FULLY IMPLEMENTED WITH DUAL LANGUAGE SUPPORT**
+
+### Language Support ✅ IMPLEMENTED
+- **English (en)**: Default interface language
+- **Chinese Simplified (zh-CN)**: Complete Chinese translation
+- **Auto-detection**: System language detection from environment variables
+- **Fallback Strategy**: Graceful fallback to English for missing translations
+
+### Implementation Architecture ✅ IMPLEMENTED
+```typescript
+// Core i18n interfaces
+export type Language = 'en' | 'zh-CN';
+export function translate(key: string, params?: Record<string, string | number>): string;
+
+// Usage examples
+translate('cli.commands.init.description')           // → "Initialize configuration file interactively"
+translate('errors.fileNotFound', { path: 'config' }) // → "File not found: config"
+```
+
+### Language Selection Methods ✅ IMPLEMENTED
+1. **CLI Option**: `--lang en|zh-CN` (highest priority)
+2. **Environment Variable**: `NEXUS_LANG=zh-CN` (CI/CD integration)
+3. **System Detection**: Automatic detection from system locale
+4. **Configuration File**: `language: 'en'` in mp-nexus.config.js
+
+### Coverage ✅ COMPREHENSIVE
+- **Command Descriptions**: All CLI command help text
+- **Interactive Prompts**: init command prompts and validation messages
+- **Log Messages**: Build process, error reporting, success notifications
+- **Validation Errors**: Input validation with localized error messages
+
+### Logger Integration ✅ IMPLEMENTED
+- **Automatic Translation**: Logger automatically translates message keys
+- **Parameter Support**: Dynamic parameter injection for contextual messages
+- **Mixed Content**: Supports both translation keys and plain text seamlessly
 
 ## Error Handling & Observability
 

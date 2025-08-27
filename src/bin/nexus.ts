@@ -7,13 +7,47 @@ import { runInit } from '../commands/init';
 import { ExitCodes } from '../utils/exit-codes';
 import { handleError } from '../utils/errors';
 import { createLogger } from '../utils/logger';
+import {
+	initI18n,
+	setLanguage,
+	getCurrentLanguage,
+	isLanguageSupported,
+	translate,
+	type Language,
+} from '../utils/i18n';
+
+// Initialize i18n system
+initI18n();
+
+// Parse language option early to apply to all help texts
+const langArgIndex = process.argv.findIndex((arg) => arg === '--lang');
+if (langArgIndex !== -1 && process.argv[langArgIndex + 1]) {
+	const langValue = process.argv[langArgIndex + 1];
+	if (isLanguageSupported(langValue)) {
+		setLanguage(langValue as Language);
+	}
+}
 
 const program = new Command();
 
 program
 	.name('nexus')
-	.description('mp-nexus-cli: 统一小程序项目的一键预览/部署 CLI')
-	.version('0.0.0-mvp');
+	.description(translate('cli.description'))
+	.version('0.0.0-mvp')
+	.option(
+		'--lang <language>',
+		'Set interface language (en|zh-CN)',
+		(value) => {
+			if (isLanguageSupported(value)) {
+				setLanguage(value as Language);
+				return value;
+			}
+			console.error(
+				`Unsupported language: ${value}. Supported: en, zh-CN`
+			);
+			process.exit(ExitCodes.ERROR_INVALID_ARGUMENTS);
+		}
+	);
 
 function loadEnv(mode?: string) {
 	dotenv.config();
@@ -38,19 +72,19 @@ function resolveConfigPath(config?: string): string | undefined {
 
 function collectCommonOptions(cmd: Command) {
 	return cmd
-		.option('--mode <env>', '环境模式（决定加载 .env.<env>）')
-		.option('--desc <text>', '版本描述')
-		.option('--ver <x.y.z>', '版本号')
-		.option('--config <path>', '自定义配置文件路径')
-		.option('--dry-run', '仅打印将执行的步骤，不真正调用 CI')
-		.option('--verbose', '输出更详细日志')
-		.option('--json', '输出结构化 JSON 格式结果');
+		.option('--mode <env>', 'Environment mode (loads .env.<env> file)')
+		.option('--desc <text>', 'Version description')
+		.option('--ver <x.y.z>', 'Version number')
+		.option('--config <path>', 'Custom configuration file path')
+		.option('--dry-run', 'Only print planned steps without calling CI')
+		.option('--verbose', 'Output detailed logs')
+		.option('--json', 'Output structured JSON format results');
 }
 
 collectCommonOptions(
 	program
 		.command('preview')
-		.description('构建并生成预览（终端可渲染二维码）')
+		.description(translate('cli.commands.preview.description'))
 		.action(async (options) => {
 			try {
 				loadEnv(options.mode);
@@ -76,7 +110,7 @@ collectCommonOptions(
 collectCommonOptions(
 	program
 		.command('deploy')
-		.description('构建并上传为新版本')
+		.description(translate('cli.commands.deploy.description'))
 		.action(async (options) => {
 			try {
 				loadEnv(options.mode);
@@ -101,7 +135,7 @@ collectCommonOptions(
 
 program
 	.command('init')
-	.description('Initialize configuration file interactively')
+	.description(translate('cli.commands.init.description'))
 	.option('--force', 'Overwrite existing configuration file')
 	.action(async (options) => {
 		try {

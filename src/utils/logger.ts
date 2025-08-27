@@ -1,8 +1,9 @@
 /**
- * Enhanced structured logger for mp-nexus-cli
+ * Enhanced structured logger for mp-nexus-cli with i18n support
  */
 
 import type { Logger } from '../types';
+import { translate, type Language } from './i18n';
 
 export interface LogContext {
 	stage?: string;
@@ -18,6 +19,21 @@ export class StructuredLogger implements Logger {
 	constructor(verbose = false, context: LogContext = {}) {
 		this.verbose = verbose;
 		this.context = context;
+	}
+
+	/**
+	 * Translate message if it's a translation key (starts with letter)
+	 */
+	private translateMessage(
+		message: string,
+		params?: Record<string, string | number>
+	): string {
+		// Check if message looks like a translation key (contains dots and starts with lowercase letter)
+		if (/^[a-z][a-zA-Z0-9.]*$/.test(message)) {
+			return translate(message, params);
+		}
+		// Return message as-is if it's not a translation key
+		return message;
 	}
 
 	private formatMessage(
@@ -70,20 +86,36 @@ export class StructuredLogger implements Logger {
 	}
 
 	info(message: string, data?: unknown): void {
-		this.logToConsole('info', message, data);
+		const translated = this.translateMessage(
+			message,
+			data as Record<string, string | number>
+		);
+		this.logToConsole('info', translated, data);
 	}
 
 	warn(message: string, data?: unknown): void {
-		this.logToConsole('warn', message, data);
+		const translated = this.translateMessage(
+			message,
+			data as Record<string, string | number>
+		);
+		this.logToConsole('warn', translated, data);
 	}
 
 	error(message: string, data?: unknown): void {
-		this.logToConsole('error', message, data);
+		const translated = this.translateMessage(
+			message,
+			data as Record<string, string | number>
+		);
+		this.logToConsole('error', translated, data);
 	}
 
 	debug(message: string, data?: unknown): void {
 		if (this.verbose) {
-			this.logToConsole('debug', message, data);
+			const translated = this.translateMessage(
+				message,
+				data as Record<string, string | number>
+			);
+			this.logToConsole('debug', translated, data);
 		}
 	}
 
