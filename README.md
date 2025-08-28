@@ -348,6 +348,7 @@ jobs:
 - [Development Plan](docs/development-plan.md) - Project development roadmap
 - [CLI Reference](docs/cli-reference.md) - Detailed command line interface documentation
 - [Configuration Reference](docs/config-reference.md) - Detailed configuration options
+- [Private Key Guide](docs/private-key-guide.md) - How to obtain and configure WeChat Mini Program private keys
 - [Adapters Guide](docs/adapters-guide.md) - Framework and platform adapter development guide
 - [Notifiers Guide](docs/notifiers-guide.md) - Notification feature configuration and extension
 - [Testing](docs/testing.md) - Testing strategies and test cases

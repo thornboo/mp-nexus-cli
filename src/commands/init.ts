@@ -360,8 +360,12 @@ function showCompletionMessage(answers: InitAnswers, logger: Logger): void {
 	logger.info('Next steps:');
 	logger.info('1. Verify your configuration in mp-nexus.config.js');
 	logger.info(
-		`2. Ensure your private key file exists at: ${answers.privateKeyPath}`
+		`2. Download your private key from WeChat Mini Program console:`
 	);
+	logger.info(`   - Visit https://mp.weixin.qq.com`);
+	logger.info(`   - Go to 开发 → 开发管理 → 开发设置`);
+	logger.info(`   - Download "代码上传密钥" and save as: ${answers.privateKeyPath}`);
+	logger.info(`   - See docs/private-key-guide.md for detailed instructions`);
 
 	if (answers.useEnvFile) {
 		logger.info(

@@ -348,6 +348,7 @@ jobs:
 - [开发计划](docs/development-plan.md) - 项目开发路线图
 - [CLI 参考](docs/cli-reference.md) - 命令行接口详细说明
 - [配置参考](docs/config-reference.md) - 配置选项详细说明
+- [私钥获取指南](docs/zh-CN/private-key-guide.md) - 微信小程序私钥获取和配置指南
 - [适配器指南](docs/adapters-guide.md) - 框架和平台适配器开发指南
 - [通知器指南](docs/notifiers-guide.md) - 通知功能配置和扩展
 - [测试](docs/testing.md) - 测试策略和用例
