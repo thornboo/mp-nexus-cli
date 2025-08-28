@@ -1,13 +1,47 @@
 {
   "name": "mp-nexus-cli",
-  "version": "0.0.0-mvp",
-  "description": "统一小程序项目的一键预览/部署 CLI。聚合 Taro/uni 与 miniprogram-ci，提供标准化流程与可扩展适配器体系。",
+  "version": "1.0.0",
+  "description": "A unified CLI tool for one-click preview/deployment of mini-program projects. Aggregates framework builds (Taro/uni-app) with miniprogram-ci upload/preview, providing standardized workflows and extensible adapter architecture.",
+  "keywords": [
+    "miniprogram",
+    "wechat",
+    "taro",
+    "uni-app",
+    "cli",
+    "deployment",
+    "preview",
+    "miniprogram-ci"
+  ],
+  "homepage": "https://github.com/thornboo/mp-nexus-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thornboo/mp-nexus-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thornboo/mp-nexus-cli/issues"
+  },
+  "author": {
+    "name": "thornboo",
+    "email": "zhaozhuang1210@gmail.com",
+    "url": "https://github.com/thornboo"
+  },
   "license": "MIT",
   "private": false,
   "bin": {
     "nexus": "dist/nexus.js"
   },
   "type": "commonjs",
+  "main": "dist/nexus.js",
+  "files": [
+    "dist",
+    "README.md",
+    "README_CN.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+
   "scripts": {
     "build": "tsup --config tsup.config.ts",
     "dev": "node dist/nexus.js --help || true",
@@ -15,7 +49,14 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "publish:npm": "node scripts/publish-npm.js",
+    "publish:npm:dry-run": "node scripts/publish-npm.js --dry-run",
+    "publish:github": "npm publish --registry=https://npm.pkg.github.com",
+    "publish:all": "node scripts/publish.js",
+    "version:patch": "npm version patch",
+    "version:minor": "npm version minor",
+    "version:major": "npm version major"
   },
   "dependencies": {
     "@types/inquirer": "^9.0.9",

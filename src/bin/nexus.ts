@@ -28,12 +28,16 @@ if (langArgIndex !== -1 && process.argv[langArgIndex + 1]) {
 	}
 }
 
+// Read version from package.json
+const packageJsonPath = path.join(__dirname, '../../package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+
 const program = new Command();
 
 program
 	.name('nexus')
 	.description(translate('cli.description'))
-	.version('0.0.0-mvp')
+	.version(packageJson.version)
 	.option(
 		'--lang <language>',
 		'Set interface language (en|zh-CN)',
