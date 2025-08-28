@@ -9,76 +9,16 @@ import { ExitCodes } from '../utils/exit-codes';
 import { Errors, handleError } from '../utils/errors';
 import { getGitInfo, applyGitDefaults } from '../utils/git';
 import { createOutputFormatter } from '../utils/output';
+import { loadUserConfig } from '../utils/config-loader';
+import { mergeConfig } from '../utils/config-merger';
+import { assertMinimalConfig } from '../utils/config-validator';
+import { ensurePaths } from '../utils/path-resolver';
 
 export interface RunContext extends CLIOptions {
 	logger: Logger;
 }
 
-async function loadUserConfig(
-	configPath?: string
-): Promise<Partial<NexusConfig>> {
-	const resolved =
-		configPath ?? path.resolve(process.cwd(), 'mp-nexus.config.js');
-	try {
-		// eslint-disable-next-line @typescript-eslint/no-var-requires
-		const cfg = require(resolved);
-		return cfg && cfg.default ? cfg.default : cfg;
-	} catch {
-		return {};
-	}
-}
-
-function mergeConfig(
-	cli: RunContext,
-	fileCfg: Partial<NexusConfig>
-): NexusConfig {
-	const merged: NexusConfig = {
-		projectPath: fileCfg.projectPath ?? '.',
-		platform: fileCfg.platform ?? 'weapp',
-		appId: fileCfg.appId ?? process.env.MP_APP_ID ?? '',
-		privateKeyPath:
-			fileCfg.privateKeyPath ??
-			process.env.MP_PRIVATE_KEY_PATH ??
-			'private.key',
-		outputDir: fileCfg.outputDir ?? 'dist/weapp',
-		ciOptions: fileCfg.ciOptions ?? {},
-		projectType: fileCfg.projectType,
-		notify: fileCfg.notify,
-	};
-
-	if (cli.ver)
-		merged.ciOptions = {
-			...(merged.ciOptions || {}),
-			version: cli.ver,
-		} as any;
-	if (cli.desc)
-		merged.ciOptions = {
-			...(merged.ciOptions || {}),
-			desc: cli.desc,
-		} as any;
-	return merged;
-}
-
-function assertMinimalConfig(cfg: NexusConfig) {
-	if (!cfg.appId) {
-		throw Errors.invalidAppId('未提供');
-	}
-	if (!cfg.privateKeyPath) {
-		throw Errors.invalidPrivateKey('未提供');
-	}
-}
-
-async function ensurePaths(cfg: NexusConfig) {
-	const projectRoot = path.resolve(process.cwd(), cfg.projectPath || '.');
-	const outputPath = path.resolve(projectRoot, cfg.outputDir || 'dist/weapp');
-	// Best-effort check
-	try {
-		await fs.access(projectRoot);
-	} catch {
-		throw Errors.fileNotFound(projectRoot);
-	}
-	return { projectRoot, outputPath };
-}
+// Configuration utilities moved to separate modules for better testability
 
 async function detectFrameworkOutput(
 	cwd: string,
