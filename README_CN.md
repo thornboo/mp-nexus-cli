@@ -69,7 +69,7 @@ nexus init
 module.exports = {
   projectType: 'taro',        // 或 'uni-app'，可省略由 CLI 自动识别
   platform: 'weapp',          // 目标平台：weapp/alipay/tt/qq
-  appId: 'wx1234567890abcd',  // 替换为你的真实 AppID
+  appId: 'your_project_appid',  // 替换为你的真实 AppID
   privateKeyPath: './private.key',
   projectPath: '.',
   outputDir: 'dist/weapp',
@@ -167,7 +167,7 @@ interface NexusConfig {
 
 ```bash
 # .env.production
-MP_APP_ID=wx1234567890abcd
+MP_APP_ID=your_app_id
 MP_PRIVATE_KEY_PATH=./private.key
 NODE_ENV=production
 ```

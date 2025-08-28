@@ -49,7 +49,7 @@
    ```javascript
    // mp-nexus.config.js
    module.exports = {
-     appId: 'wx1234567890abcdef', // 检查这是否与您的项目匹配
+     appId: 'your_project_appid', // 检查这是否与您的项目匹配
    };
    ```
 
@@ -61,7 +61,7 @@
 3. **环境变量**：对敏感数据使用环境变量
    ```bash
    # .env
-   MP_APP_ID=wx1234567890abcdef
+   MP_APP_ID=your_app_id
    MP_PRIVATE_KEY_PATH=./private.key
    ```
 
@@ -134,7 +134,7 @@
 1. **文件格式**：确保 `.env` 文件格式正确
    ```bash
    # .env
-   MP_APP_ID=wx1234567890abcdef
+   MP_APP_ID=your_app_id
    # 无空格，无引号（除非值包含空格）
    ```
 

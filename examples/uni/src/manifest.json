@@ -12,7 +12,7 @@
     "title": "uni-app-example"
   },
   "mp-weixin": {
-    "appid": "wx1234567890abcdef",
+    "appid": "your_project_appid",
     "setting": {
       "urlCheck": false,
       "es6": true,

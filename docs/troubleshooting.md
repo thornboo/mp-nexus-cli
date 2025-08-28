@@ -47,7 +47,7 @@
    ```javascript
    // mp-nexus.config.js
    module.exports = {
-     appId: 'wx1234567890abcdef', // Check this matches your project
+     appId: 'your_project_appid', // Check this matches your project
    };
    ```
 
@@ -59,7 +59,7 @@
 3. **Environment Variables**: Use environment variables for sensitive data
    ```bash
    # .env
-   MP_APP_ID=wx1234567890abcdef
+   MP_APP_ID=your_app_id
    MP_PRIVATE_KEY_PATH=./private.key
    ```
 

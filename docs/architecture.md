@@ -171,7 +171,7 @@ export interface NexusConfig {
 module.exports = {
   projectType: 'taro', // Auto-detected if omitted
   platform: 'weapp',
-  appId: process.env.MP_APP_ID || 'wx1234567890abcd',
+  appId: process.env.MP_APP_ID || 'your_project_appid',
   privateKeyPath: process.env.MP_PRIVATE_KEY_PATH || './private.key',
   projectPath: '.',
   outputDir: 'dist/weapp', // Auto-detected based on framework

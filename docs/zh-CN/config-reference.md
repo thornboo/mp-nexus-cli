@@ -65,7 +65,7 @@ export interface NexusConfig {
 module.exports = {
   projectType: 'taro',
   platform: 'weapp',
-  appId: 'wx1234567890abcdef',
+  appId: 'your_project_appid',
   privateKeyPath: './private.key',
   projectPath: '.',
   outputDir: 'dist/weapp',
@@ -214,12 +214,12 @@ ciOptions: {
 
 ```bash
 # .env
-MP_APP_ID=wx1234567890abcdef
+MP_APP_ID=your_app_id
 MP_PRIVATE_KEY_PATH=./private.key
 NODE_ENV=development
 
 # .env.production
-MP_APP_ID=wx9876543210fedcba
+MP_APP_ID=your_production_app_id
 MP_PRIVATE_KEY_PATH=./private-prod.key
 NODE_ENV=production
 FEISHU_WEBHOOK=https://open.feishu.cn/open-apis/bot/v2/hook/xxx

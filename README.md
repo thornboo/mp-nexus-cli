@@ -69,7 +69,7 @@ Or manually create the configuration file:
 module.exports = {
   projectType: 'taro',        // or 'uni-app', can be omitted for auto-detection
   platform: 'weapp',          // target platform: weapp/alipay/tt/qq
-  appId: 'wx1234567890abcd',  // replace with your real AppID
+  appId: 'your_project_appid',  // replace with your real AppID
   privateKeyPath: './private.key',
   projectPath: '.',
   outputDir: 'dist/weapp',
@@ -167,7 +167,7 @@ interface NexusConfig {
 
 ```bash
 # .env.production
-MP_APP_ID=wx1234567890abcd
+MP_APP_ID=your_app_id
 MP_PRIVATE_KEY_PATH=./private.key
 NODE_ENV=production
 ```
