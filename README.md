@@ -30,7 +30,7 @@ A unified CLI tool for one-click preview/deployment of mini-program projects. Ag
 | **Error Handling & Logging** | ✅ Complete | 100% |
 | **Interactive Initialization** | ✅ Complete | 100% |
 | **QR Code Generation** | ✅ Complete | 100% |
-| **uni-app Framework Support** | ✅ Complete | 95% |
+| **uni-app Framework Support** | ✅ Complete | 100% |
 | **Internationalization (i18n)** | ✅ Complete | 100% |
 | **Multi-platform Support** | ⚠️ Partial | 25% |
 | **Notification System** | ⚠️ Partial | 70% |
