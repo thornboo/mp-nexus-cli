@@ -4,6 +4,7 @@ import { execa } from 'execa';
 import type { BuildOptions, FrameworkAdapter } from '../../../types/adapters';
 import { Errors } from '../../../utils/errors';
 import { withRetry, RetryPresets } from '../../../utils/retry';
+import { translate } from '../../../utils/i18n';
 
 async function readJsonSafe(filePath: string): Promise<any | undefined> {
 	try {
@@ -31,11 +32,11 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
 	async build(options: BuildOptions): Promise<void> {
 		const skip = options.env?.NEXUS_SKIP_BUILD === '1';
 		if (skip) {
-			options.logger.info('[taro] 跳过构建（NEXUS_SKIP_BUILD=1）');
+			options.logger.info(translate('framework.taro.buildSkipped'));
 			return;
 		}
 
-		options.logger.info('[taro] 开始构建...');
+		options.logger.info(translate('framework.taro.buildStart'));
 
 		try {
 			// Check if Taro CLI is available with retry
@@ -91,7 +92,7 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
 				'Taro build'
 			);
 
-			options.logger.info('[taro] Build completed successfully');
+			options.logger.info(translate('framework.taro.buildCompleted'));
 		} catch (error) {
 			if (error instanceof Error) {
 				// Re-throw as properly classified error
@@ -114,7 +115,7 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
 
 	async getOutputPath(options: BuildOptions): Promise<string> {
 		try {
-			// 读取项目配置中的输出目录
+			// Read output directory from project configuration
 			const configPath = path.resolve(options.cwd, 'config', 'index.js');
 			const config = await import(configPath).catch(() => null);
 
@@ -126,12 +127,14 @@ export class TaroFrameworkAdapter implements FrameworkAdapter {
 			}
 
 			const candidate = path.resolve(options.cwd, outputDir);
-			options.logger.debug?.(`[taro] 产物目录: ${candidate}`);
+			options.logger.debug?.(`[taro] Output directory: ${candidate}`);
 			return candidate;
 		} catch {
-			// 回退到默认路径
+			// Fallback to default path
 			const candidate = path.resolve(options.cwd, 'dist', 'weapp');
-			options.logger.debug?.(`[taro] 使用默认产物目录: ${candidate}`);
+			options.logger.debug?.(
+				`[taro] Using default output directory: ${candidate}`
+			);
 			return candidate;
 		}
 	}

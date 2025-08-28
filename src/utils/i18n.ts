@@ -136,6 +136,11 @@ function loadMessages(): void {
 			},
 		},
 		framework: {
+			taro: {
+				buildStart: '[taro] Starting build...',
+				buildCompleted: '[taro] Build completed successfully',
+				buildSkipped: '[taro] Skip build (NEXUS_SKIP_BUILD=1)',
+			},
 			uniapp: {
 				buildStart: '[uni-app] Starting build...',
 				buildCompleted: '[uni-app] Build completed successfully',
@@ -195,6 +200,11 @@ function loadMessages(): void {
 			},
 		},
 		framework: {
+			taro: {
+				buildStart: '[taro] 开始构建...',
+				buildCompleted: '[taro] 构建完成',
+				buildSkipped: '[taro] 跳过构建 (NEXUS_SKIP_BUILD=1)',
+			},
 			uniapp: {
 				buildStart: '[uni-app] 开始构建...',
 				buildCompleted: '[uni-app] 构建完成',
