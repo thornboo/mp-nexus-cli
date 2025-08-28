@@ -11,17 +11,27 @@
   "scripts": {
     "build": "tsup --config tsup.config.ts",
     "dev": "node dist/nexus.js --help || true",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false"
   },
   "dependencies": {
+    "@types/inquirer": "^9.0.9",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "execa": "^9.6.0",
+    "inquirer": "^12.9.4",
     "miniprogram-ci": "^2.1.14",
     "qrcode-terminal": "^0.12.0",
     "simple-git": "^3.28.0"
   },
   "devDependencies": {
+    "@jest/globals": "^30.1.1",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.1.1",
+    "ts-jest": "^29.4.1",
     "tsup": "^8.1.0",
     "typescript": "^5.5.4"
   }
